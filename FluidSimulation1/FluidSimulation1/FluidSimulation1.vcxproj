@@ -135,11 +135,13 @@
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="Environment.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Timer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.hpp" />
     <ClInclude Include="Environment.hpp" />
     <ClInclude Include="Particle.hpp" />
+    <ClInclude Include="Timer.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

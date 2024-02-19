@@ -11,8 +11,12 @@ public:
     Application();
     ~Application();
 
+    void events();
     void loop();
     void draw();
+
+    void update(float dt);
+
     void mousePress(SDL_MouseButtonEvent& b);
 private:
     SDL_Window* m_window;
@@ -22,4 +26,6 @@ private:
     Environment* m_environment;
 
     SDL_Event m_window_event;
+
+    bool m_is_running;
 };
