@@ -141,6 +141,7 @@
     <ClInclude Include="Application.hpp" />
     <ClInclude Include="Environment.hpp" />
     <ClInclude Include="Particle.hpp" />
+    <ClInclude Include="Phisics.hpp" />
     <ClInclude Include="Timer.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -85,11 +85,11 @@ void Application::loop()
 
 		double deltaTime = Timer::GetInstance()->GetTime();
 
-		std::cout << deltaTime << std::endl;
+		//std::cout << deltaTime << std::endl;
 
 		update(deltaTime);
 
-		draw();
+		render();
 	}
 }
 
@@ -104,7 +104,7 @@ void Application::mousePress(SDL_MouseButtonEvent& b) {
 		}
 }
 
-void Application::draw()
+void Application::render()
 {
 	/*SDL_UpdateWindowSurface(m_window);
 	SDL_FillRect(m_window_surface, NULL, SDL_MapRGB(m_window_surface->format, 0, 0, 0));*/
@@ -113,7 +113,7 @@ void Application::draw()
 	SDL_SetRenderDrawColor(m_renderer, 255, 255, 255, 255);
 	//SDL_RenderClear(m_renderer);
 
-	m_environment->draw(m_renderer);
+	m_environment->render(m_renderer);
 
 	SDL_SetRenderDrawColor(m_renderer, 0, 0, 0, 255);
 
@@ -123,5 +123,5 @@ void Application::draw()
 
 void Application::update(float dt)
 {
-
+	m_environment->update(dt);
 }

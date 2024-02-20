@@ -1,0 +1,7 @@
+now every particle always checks collision with everything that exists:
+
+improve this by dividing the screen into small square the size of the particle interaction radius
+
+and a particle only checks for interactions in the squares that surround the square that contains its center (6 squares in total)
+
+downside would be that you need to always update the inside of all the squares so memory shoould increase but i think that it is worth

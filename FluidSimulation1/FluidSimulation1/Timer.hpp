@@ -1,8 +1,10 @@
+#pragma once
+
 #include <chrono>
 
 class Timer {
 public:
-	
+
 	static Timer* GetInstance() {
 		return s_instance = (s_instance != nullptr) ? s_instance : new Timer();
 	}

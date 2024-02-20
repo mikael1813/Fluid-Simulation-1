@@ -13,7 +13,7 @@ public:
 
     void events();
     void loop();
-    void draw();
+    void render();
 
     void update(float dt);
 

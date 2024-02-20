@@ -12,7 +12,7 @@ int main(int argc, char* args[]) {
     Application app;
 
     app.loop();
-    app.draw();
+    app.render();
 
     _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_DEBUG);
     _CrtDumpMemoryLeaks();
