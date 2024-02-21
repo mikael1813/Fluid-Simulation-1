@@ -6,6 +6,11 @@
 
 #include <vector>
 
+struct MatrixComponenets {
+	std::vector<Particle> particles;
+	std::vector<Surface2D> obstacles;
+};
+
 
 class Environment
 {
@@ -17,6 +22,8 @@ public:
 	void update(float dt);
 
 private:
-	std::vector<Particle> m_particles;
-	std::vector<Surface2D> m_obstacles;
+	std::vector<Particle> m_Particles;
+	std::vector<Surface2D> m_Obstacles;
+
+	std::vector<std::vector<MatrixComponenets>> m_InteractionsMatrix;
 };

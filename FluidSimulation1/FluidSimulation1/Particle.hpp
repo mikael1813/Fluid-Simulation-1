@@ -9,9 +9,9 @@ constexpr float gravity = 99.8f;
 
 class Particle {
 public:
-	Particle(float x, float y) : m_Position(Point(x, y)) {}
-	Point m_Position;
-	Point m_LastSafePosition;
+	Particle(float x, float y) : m_Position(Point2D(x, y)) {}
+	Point2D m_Position;
+	Point2D m_LastSafePosition;
 	Vector2D m_Velocity;
 
 	void update(float dt) {
