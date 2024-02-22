@@ -1,9 +1,12 @@
 #include "Environment.hpp"
 
+#include <algorithm>
+
 #include <SDL.h>
 
 constexpr auto particleCount = 10;
-constexpr auto particleRadius = 10;
+constexpr auto particleRadius = 5;
+constexpr auto particleRadiusOfRepel = 20;
 constexpr auto particleDistance = 30;
 
 constexpr auto SCREEN_WIDTH = 1280;
@@ -84,6 +87,8 @@ void Environment::render(SDL_Renderer* renderer)
 {
 	for (auto& particle : m_Particles) {
 		DrawCircle(renderer, particle.m_Position.X, particle.m_Position.Y, particleRadius);
+
+		DrawCircle(renderer, particle.m_Position.X, particle.m_Position.Y, particleRadiusOfRepel);
 	}
 
 	for (auto& obstacle : m_Obstacles) {
@@ -130,6 +135,11 @@ bool check_line_segment_circle_intersection(const Point2D& A, const Point2D& B, 
 	// Check if the distance from P to C is less than or equal to the radius
 	float dist_CP_squared = squared_distance(C, P);
 	return dist_CP_squared <= radius * radius;
+}
+
+float smoothing_kernel(float radius, float distance) {
+
+	float value = std::max(0.0f, radius - distance);
 }
 
 void Environment::update(float dt) {
