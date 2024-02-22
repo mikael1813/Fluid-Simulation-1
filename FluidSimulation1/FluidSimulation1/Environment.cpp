@@ -28,7 +28,7 @@ Environment::Environment() {
 	}
 
 	m_Obstacles.push_back(Surface2D(10, 10, 10, 700));
-	m_Obstacles.push_back(Surface2D(10, 700, 1200, 700));
+	m_Obstacles.push_back(Surface2D(10, 600, 1200, 700));
 	m_Obstacles.push_back(Surface2D(1200, 10, 1200, 700));
 
 
@@ -138,7 +138,37 @@ void Environment::update(float dt) {
 
 		for (auto& obstacle : m_Obstacles) {
 			if (check_line_segment_circle_intersection(obstacle.Point1, obstacle.Point2, particle.m_Position, particleRadius)) {
-				particle.m_Velocity.Y = -particle.m_Velocity.Y;
+				Vector2D normalVector = Math::calculateNormalVector(Math::calculateSlope(obstacle.Point1, obstacle.Point2));
+				Vector2D reflectionVector = Math::calculateReflectionVector(particle.m_Velocity, normalVector);
+
+				particle.m_Velocity = reflectionVector;
+
+				/*particle.m_Velocity.Y = -particle.m_Velocity.Y;*/
+
+				particle.m_Position = particle.m_LastSafePosition;
+			}
+		}
+
+		for (auto& particle_2 : m_Particles) {
+			if (&particle == &particle_2) {
+				continue;
+			}
+			if (squared_distance(particle.m_Position, particle_2.m_Position) <= (particleRadius * particleRadius * 4)) {
+
+				Vector2D normalVector = Vector2D(particle_2.m_Position.X - particle.m_Position.X, particle_2.m_Position.Y - particle.m_Position.Y);
+
+				//magnitude of normal vector
+				float magnitude = sqrt(normalVector.X * normalVector.X + normalVector.Y * normalVector.Y);
+
+				// normalize the normal vector
+				normalVector.X /= magnitude;
+				normalVector.Y /= magnitude;
+
+				Vector2D reflectionVector = Math::calculateReflectionVector(particle.m_Velocity, normalVector);
+
+				particle.m_Velocity = reflectionVector;
+
+
 				particle.m_Position = particle.m_LastSafePosition;
 			}
 		}

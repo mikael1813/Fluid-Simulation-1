@@ -4,7 +4,7 @@
 
 #include <iostream>
 
-constexpr float gravity = 99.8f;
+constexpr float GRAVITY = 99.8f;
 
 
 class Particle {
@@ -20,14 +20,16 @@ public:
 			return;
 		}
 
-		m_Velocity.Y += gravity * dt;
+		Vector2D gravity(0.0f, GRAVITY);
+
+		m_Velocity += gravity * dt;
 
 		m_Position.X += m_Velocity.X * dt;
 		m_Position.Y += m_Velocity.Y * dt;
 	}
 
 private:
-	
+
 	float visible_radius = 2.0f;
 	float mass = 1.0f;
 
