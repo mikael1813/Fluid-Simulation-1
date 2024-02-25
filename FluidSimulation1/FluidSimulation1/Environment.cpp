@@ -11,7 +11,7 @@
 
 #include <SDL.h>
 
-constexpr auto particleCount = 15;
+constexpr auto particleCount = 10;
 constexpr auto particleRadius = 5;
 constexpr auto particleRadiusOfRepel = 100;
 constexpr auto particleDistance = 30;
@@ -20,7 +20,12 @@ constexpr auto maximumSpeed = 400.0f;
 
 constexpr auto particleRepulsionForce = 5.0f;
 
-constexpr auto SCREEN_WIDTH = 1280;
+//constexpr auto SCREEN_WIDTH = 1280;
+constexpr auto SCREEN_WIDTH = 2300;
+
+constexpr auto MIN_WIDTH = -500;
+constexpr auto MAX_WIDTH = 1800;
+
 constexpr auto SCREEN_HEIGHT = 720;
 
 float ExampleFunction(Vector2D point) {
@@ -29,9 +34,9 @@ float ExampleFunction(Vector2D point) {
 
 
 Environment::Environment() {
-	for (int i = 0; i < SCREEN_HEIGHT / particleRadius; i++) {
+	for (int i = 0; i < SCREEN_HEIGHT / particleRadiusOfRepel; i++) {
 		std::vector<MatrixComponenets> row;
-		for (int j = 0; j < SCREEN_WIDTH / particleRadius; j++) {
+		for (int j = 0; j < SCREEN_WIDTH / particleRadiusOfRepel; j++) {
 			row.push_back(MatrixComponenets());
 		}
 		m_InteractionsMatrix.push_back(row);
@@ -47,7 +52,7 @@ Environment::Environment() {
 		for (int j = 0; j < particleCount; j++) {
 			/*float posX = 200 + i * particleDistance;
 			float posY = 200 + j * particleDistance;*/
-			float posX = std::uniform_int_distribution<int>(-400, 1700)(gen);
+			float posX = std::uniform_int_distribution<int>(50, 1200)(gen);
 			float posY = std::uniform_int_distribution<int>(10, 600)(gen);
 			m_Particles.push_back(Particle(posX, posY));
 			m_ParticleProperties.push_back(ExampleFunction(Vector2D(posX, posY)));
@@ -55,10 +60,10 @@ Environment::Environment() {
 		}
 	}
 
-	m_Obstacles.push_back(Surface2D(-400, 10, 1700, 11));
-	m_Obstacles.push_back(Surface2D(-400, 10, -400, 700));
-	m_Obstacles.push_back(Surface2D(-400, 699, 1700, 700));
-	m_Obstacles.push_back(Surface2D(1700, 10, 1700, 700));
+	m_Obstacles.push_back(Surface2D(50, 10, 1200, 11));
+	m_Obstacles.push_back(Surface2D(50, 10, 50, 700));
+	m_Obstacles.push_back(Surface2D(50, 699, 1200, 700));
+	m_Obstacles.push_back(Surface2D(1200, 10, 1200, 700));
 
 
 }
@@ -107,8 +112,13 @@ Environment::~Environment()
 
 void DrawCircle(int width, int height, float x, float y, float radius, int num_segments) {
 
+	float raport = (float)width / (float)height;
+	
 	x = (2.0f * x) / width - 1.0f;
+	x = x * raport;
+
 	y = 1.0f - (2.0f * y) / height;
+
 	radius = (2.0f * radius) / width;
 
 	glBegin(GL_TRIANGLE_FAN);
@@ -122,10 +132,17 @@ void DrawCircle(int width, int height, float x, float y, float radius, int num_s
 }
 
 void DrawLine(int width, int height, Vector2D a, Vector2D b) {
+
+	float raport = (float)width / (float)height;
+
 	a.X = (2.0f * a.X) / width - 1.0f;
+	a.X = a.X * raport;
+
 	a.Y = 1.0f - (2.0f * a.Y) / height;
 
 	b.X = (2.0f * b.X) / width - 1.0f;
+	b.X = b.X * raport;
+
 	b.Y = 1.0f - (2.0f * b.Y) / height;
 
 	glBegin(GL_LINES);
