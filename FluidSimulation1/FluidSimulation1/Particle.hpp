@@ -4,21 +4,22 @@
 
 #include <iostream>
 
-constexpr float GRAVITY = 99.8f;
+constexpr float GRAVITY = 9.0f;
 
 
 class Particle {
 public:
-	Particle(float x, float y) : m_Position(Point2D(x, y)) {}
-	Point2D m_Position;
-	Point2D m_LastSafePosition;
+	Particle(float x, float y) : m_Position(Vector2D(x, y)) {}
+	Vector2D m_Position;
+	Vector2D m_LastSafePosition;
 	Vector2D m_Velocity;
 
 	void update(float dt) {
-		m_LastSafePosition = m_Position;
 		if (dt == 0) {
 			return;
 		}
+
+		m_LastSafePosition = m_Position;
 
 		Vector2D gravity(0.0f, GRAVITY);
 
@@ -26,6 +27,8 @@ public:
 
 		m_Position.X += m_Velocity.X * dt;
 		m_Position.Y += m_Velocity.Y * dt;
+
+		m_Velocity = m_Velocity * 0.99f;
 	}
 
 private:
