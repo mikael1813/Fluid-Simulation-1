@@ -20,6 +20,10 @@ public:
 
 	float calculateDensity(Vector2D point);
 	float calculateProperty(Vector2D point);
+
+	void updateInteractionMatrix();
+	std::vector<Particle> getParticlesInCell(Vector2D particlePosition);
+
 	void render(int width, int height);
 	void update(float dt);
 
