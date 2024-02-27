@@ -11,7 +11,7 @@
 
 #include <SDL.h>
 
-constexpr auto particleCount = 14;
+constexpr auto particleCount = 10;
 constexpr auto particleRadius = 5;
 constexpr auto particleRadiusOfRepel = 100;
 constexpr auto particleDistance = 30;
@@ -37,9 +37,9 @@ float ExampleFunction(Vector2D point) {
 Environment::Environment() {
 
 
-	for (int i = 0; i < SCREEN_HEIGHT / particleRadiusOfRepel; i++) {
+	for (int i = 0; i <= SCREEN_HEIGHT / particleRadiusOfRepel; i++) {
 		std::vector<MatrixComponenets> row;
-		for (int j = 0; j < SCREEN_WIDTH / particleRadiusOfRepel; j++) {
+		for (int j = 0; j <= SCREEN_WIDTH / particleRadiusOfRepel; j++) {
 			row.push_back(MatrixComponenets());
 		}
 		m_InteractionsMatrix.push_back(row);
@@ -51,13 +51,15 @@ Environment::Environment() {
 	std::random_device rd;
 	std::mt19937 gen(rd());
 
+	int count = 0;
+
 	for (int i = 0; i < particleCount * 2; i++) {
 		for (int j = 0; j < particleCount; j++) {
 			/*float posX = 200 + i * particleDistance;
 			float posY = 200 + j * particleDistance;*/
 			float posX = std::uniform_int_distribution<int>(100, SCREEN_WIDTH - 100)(gen);
 			float posY = std::uniform_int_distribution<int>(100, SCREEN_HEIGHT - 100)(gen);
-			m_Particles.push_back(Particle(posX, posY));
+			m_Particles.push_back(Particle(posX, posY, count++));
 			m_ParticleProperties.push_back(ExampleFunction(Vector2D(posX, posY)));
 			m_ParticleDensities.push_back(0.0f);
 		}
@@ -177,25 +179,25 @@ void GetSpeedColor(float speed, float& red, float& green, float& blue) {
 void Environment::render(int width, int height)
 {
 	float maxDensity = 0.0f;
-	for (auto& particleDensity : m_ParticleDensities) {
+	for (auto& particle : m_Particles) {
 
-		if (particleDensity > maxDensity) {
-			maxDensity = particleDensity;
+		if (particle.m_Density > maxDensity) {
+			maxDensity = particle.m_Density;
 		}
 	}
-	for (int i = 0; i < m_Particles.size(); i++) {
+	for (auto& particle : m_Particles) {
 
-		float density = m_ParticleDensities.at(i);
+		float density = particle.m_Density;
 
-		Vector2D vc = m_Particles.at(i).m_Velocity;
+		Vector2D vc = particle.m_Velocity;
 
 		float color = density / maxDensity;
 
 		glColor4f(color, color, color, 1.0f);
-		DrawCircle(width, height, m_Particles.at(i).m_Position.X, m_Particles.at(i).m_Position.Y, particleRadius * 2, 20);
+		DrawCircle(width, height, particle.m_Position.X,particle.m_Position.Y, particleRadius * 2, 20);
 
 		glColor4f(1.0, 1.0, 1.0, 0.4f);
-		DrawLine(width, height, m_Particles.at(i).m_Position, m_Particles.at(i).m_Position + vc);
+		DrawLine(width, height, particle.m_Position, particle.m_Position + vc);
 		//DrawCircle(renderer, particle.m_Position.X, particle.m_Position.Y, particleRadius);
 
 		//float red, green, blue;
@@ -290,7 +292,7 @@ float Environment::calculateDensity(Vector2D point) {
 	float density = 0.0f;
 	const float mass = 1.0f;
 
-	for (auto& particle : m_Particles) {
+	for (auto& particle : getParticlesInCell(point)) {
 		float distance = sqrt(squared_distance(point, particle.m_Position));
 		float influence = smoothingKernel(particleRadiusOfRepel, distance);
 		density += mass * influence;
@@ -375,26 +377,43 @@ Vector2D getRandomDir() {
 	return direction;
 }
 
-Vector2D Environment::calculatePressureForce(int particleIndex) {
+Vector2D Environment::calculatePressureForce(Particle particle) {
 	Vector2D pressureForce = Vector2D();
 	const float mass = 1.0f;
+	int count = 0;
+	auto uu = getParticlesInCell(particle.m_Position);
+	for (auto& otherParticle : getParticlesInCell(particle.m_Position)) {
+		if (particle.m_ID == otherParticle.m_ID) {
+			continue;
+		}
+		float distance = sqrt(squared_distance(particle.m_Position, otherParticle.m_Position));
+		float slope = smoothingKernelDerivative(particleRadiusOfRepel, distance);
+		if (slope != 0) {
+			count++;
+		}
+	}
+	std::vector<Particle> dummy;
+	int count2 = 0;
+	for (auto& otherParticle :m_Particles) {
 
-	for (int i = 0; i < m_Particles.size(); i++) {
-
-		if (i == particleIndex) {
+		if (particle.m_ID == otherParticle.m_ID) {
 			continue;
 		}
 
-		float distance = sqrt(squared_distance(m_Particles.at(particleIndex).m_Position, m_Particles.at(i).m_Position));
+		float distance = sqrt(squared_distance(particle.m_Position, otherParticle.m_Position));
 		if (distance < particleRadius) {
 			int tt = 0;
 		}
-		Vector2D dir = distance < particleRadius ? getRandomDir() : (m_Particles.at(i).m_Position - m_Particles.at(particleIndex).m_Position) / distance;
+		Vector2D dir = distance < particleRadius ? getRandomDir() : (otherParticle.m_Position - particle.m_Position) / distance;
 		float slope = smoothingKernelDerivative(particleRadiusOfRepel, distance);
+		if (slope != 0) {
+			count2++;
+			dummy.push_back(otherParticle);
+		}
 
-		float density = m_ParticleDensities.at(i);
+		float density = otherParticle.m_Density;
 
-		float sharedPressure = calculateSharedPressure(density, m_ParticleDensities.at(i));
+		float sharedPressure = calculateSharedPressure(density, otherParticle.m_Density);
 
 		pressureForce += -sharedPressure * dir * slope * mass / density;
 	}
@@ -406,26 +425,38 @@ void Environment::updateInteractionMatrix()
 {
 	// Parallelize the loop using OpenMP
 	//#pragma omp parallel for
+	try {
+		int sum = 0;
 
-	int sum = 0;
+		for (int i = 0; i < m_InteractionsMatrix.size(); i++) {
+			for (int j = 0; j < m_InteractionsMatrix.at(0).size(); j++) {
+				//std::cout << i << " " << j << std::endl;
+				sum += m_InteractionsMatrix.at(i).at(j).particles.size();
+				m_InteractionsMatrix.at(i).at(j).particles.clear();
+			}
+		}
 
-	for (int i = 0; i < SCREEN_HEIGHT / particleRadiusOfRepel; i++) {
-		for (int j = 0; j < SCREEN_WIDTH / particleRadiusOfRepel; j++) {
-			sum += m_InteractionsMatrix.at(i).at(j).particles.size();
-			m_InteractionsMatrix.at(i).at(j).particles.clear();
+		for (int i = 0; i < m_Particles.size(); i++) {
+			int x = m_Particles.at(i).m_Position.Y / particleRadiusOfRepel;
+			int y = m_Particles.at(i).m_Position.X / particleRadiusOfRepel;
+			if (x < 0 || x >= m_InteractionsMatrix.size() || y < 0 || y >= m_InteractionsMatrix.at(0).size()) {
+				continue;
+			}
+			//std::cout << x << " " << y << " " << i << " " << m_Particles.at(i).m_Position.Y << " " << m_Particles.at(i).m_Position.X << std::endl;
+
+			m_InteractionsMatrix.at(x).at(y).particles.push_back(m_Particles.at(i));
+
 		}
 	}
-
-	for (int i = 0; i < m_Particles.size(); i++) {
-		int x = m_Particles.at(i).m_Position.Y / particleRadiusOfRepel;
-		int y = m_Particles.at(i).m_Position.X / particleRadiusOfRepel;
-		/*std::cout << x << " " << y << " " << i << " " << m_Particles.at(i).m_Position.Y << " " << m_Particles.at(i).m_Position.X << std::endl;*/
-		m_InteractionsMatrix.at(x).at(y).particles.push_back(m_Particles.at(i));
+	catch (std::out_of_range e) {
+		std::cout << e.what() << std::endl;
 	}
 }
 
 std::vector<Particle> Environment::getParticlesInCell(Vector2D particlePosition) {
 	std::vector<Particle> output;
+
+	try{
 
 	int x = particlePosition.Y / particleRadiusOfRepel;
 	int y = particlePosition.X / particleRadiusOfRepel;
@@ -435,8 +466,14 @@ std::vector<Particle> Environment::getParticlesInCell(Vector2D particlePosition)
 			if (x + i < 0 || x + i >= m_InteractionsMatrix.size() || y + j < 0 || y + j >= m_InteractionsMatrix.at(0).size()) {
 				continue;
 			}
+			//std::cout << x << " " << y << std::endl;
 			output.insert(output.end(), m_InteractionsMatrix.at(x).at(y).particles.begin(), m_InteractionsMatrix.at(x).at(y).particles.end());
 		}
+	}
+
+	}
+	catch (std::out_of_range e) {
+		std::cout << e.what() << std::endl;
 	}
 
 	return output;
@@ -451,28 +488,31 @@ void Environment::update(float dt) {
 
 	// Parallelize the loop using OpenMP
 #pragma omp parallel for reduction(+:total)
-	for (int i = 0; i < m_Particles.size(); i++) {
+	for (auto& particle : m_Particles) {
 
 		/*Vector2D futurePosition = m_Particles.at(i).m_Position + m_Particles.at(i).m_Velocity * dt;
 		m_ParticleDensities.at(i) = calculateDensity(futurePosition);*/
 
-		m_ParticleDensities.at(i) = calculateDensity(m_Particles.at(i).m_Position);
+		particle.m_Density = calculateDensity(particle.m_Position);
 
 	}
-	for (int i = 0; i < m_Particles.size(); i++) {
 
-		Vector2D pressureForce = calculatePressureForce(i);
-		Vector2D pressureAcceleration = pressureForce / m_ParticleDensities.at(i);
+	updateInteractionMatrix();
 
-		m_Particles.at(i).m_Velocity += pressureAcceleration * dt;
+	for (auto& particle : m_Particles) {
 
-		m_Particles.at(i).update(dt);
+		Vector2D pressureForce = calculatePressureForce(particle);
+		Vector2D pressureAcceleration = pressureForce / particle.m_Density;
+
+		particle.m_Velocity += pressureAcceleration * dt;
+
+		particle.update(dt);
 
 
 		for (auto& obstacle : m_Obstacles) {
-			if (check_line_segment_circle_intersection(obstacle.Point1, obstacle.Point2, m_Particles.at(i).m_Position, particleRadius)) {
+			if (check_line_segment_circle_intersection(obstacle.Point1, obstacle.Point2,particle.m_Position, particleRadius)) {
 				Vector2D normalVector = Math::calculateNormalVector(Math::calculateSlope(obstacle.Point1, obstacle.Point2));
-				Vector2D reflectionVector = Math::calculateReflectionVector(m_Particles.at(i).m_Velocity, normalVector);
+				Vector2D reflectionVector = Math::calculateReflectionVector(particle.m_Velocity, normalVector);
 
 				// magnitude of reflection vector
 				float magnitude = sqrt(reflectionVector.X * reflectionVector.X + reflectionVector.Y * reflectionVector.Y);
@@ -481,16 +521,16 @@ void Environment::update(float dt) {
 				/*reflectionVector.X /= magnitude;
 				reflectionVector.Y /= magnitude;*/
 
-				m_Particles.at(i).m_Velocity = reflectionVector * 0.1f;
+				particle.m_Velocity = reflectionVector * 0.1f;
 
 				/*particle.m_Velocity.Y = -particle.m_Velocity.Y;*/
 
-				m_Particles.at(i).m_Position = m_Particles.at(i).m_LastSafePosition;
+				particle.m_Position = particle.m_LastSafePosition;
 			}
 		}
 
-		for (int j = 0; j < m_Particles.size(); j++) {
-			if (i == j) {
+		for (auto& otherParticle : m_Particles) {
+			if (particle.m_ID == otherParticle.m_ID) {
 				continue;
 			}
 			//if (squared_distance(m_Particles.at(i).m_Position, m_Particles.at(j).m_Position) <= (particleRadius * particleRadius * 4)) {
@@ -511,8 +551,8 @@ void Environment::update(float dt) {
 
 				//m_Particles.at(i).m_Position = m_Particles.at(i).m_LastSafePosition;
 			//}
-			if (squared_distance(m_Particles.at(i).m_Position, m_Particles.at(j).m_Position) <= (particleRadius * particleRadius) * 4) {
-				Vector2D normalVector = Vector2D(m_Particles.at(j).m_Position.X - m_Particles.at(i).m_Position.X, m_Particles.at(j).m_Position.Y - m_Particles.at(i).m_Position.Y);
+			if (squared_distance(particle.m_Position, otherParticle.m_Position) <= (particleRadius * particleRadius) * 4) {
+				Vector2D normalVector = Vector2D(otherParticle.m_Position.X - particle.m_Position.X, otherParticle.m_Position.Y - particle.m_Position.Y);
 
 				//magnitude of normal vector
 				float magnitude = -1 * sqrt(normalVector.X * normalVector.X + normalVector.Y * normalVector.Y);
@@ -525,9 +565,9 @@ void Environment::update(float dt) {
 				float power = 1;
 				power *= particleRepulsionForce;
 
-				m_Particles.at(i).m_Velocity += normalVector * power;
+				particle.m_Velocity += normalVector * power;
 
-				m_Particles.at(j).m_Velocity -= normalVector * power;
+				otherParticle.m_Velocity -= normalVector * power;
 
 				int x = 0;
 

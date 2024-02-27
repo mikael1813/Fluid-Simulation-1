@@ -9,10 +9,12 @@ constexpr float GRAVITY = 9.0f;
 
 class Particle {
 public:
-	Particle(float x, float y) : m_Position(Vector2D(x, y)) {}
+	Particle(float x, float y, int id) : m_Position(Vector2D(x, y)), m_ID(id) {}
 	Vector2D m_Position;
 	Vector2D m_LastSafePosition;
 	Vector2D m_Velocity;
+	float m_Density = 0.0f;
+	int m_ID;
 
 	void update(float dt) {
 		if (dt == 0) {
@@ -35,5 +37,4 @@ private:
 
 	float visible_radius = 2.0f;
 	float mass = 1.0f;
-
 };

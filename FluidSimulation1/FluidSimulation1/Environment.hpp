@@ -18,11 +18,6 @@ public:
 	Environment();
 	~Environment();
 
-	float calculateDensity(Vector2D point);
-	float calculateProperty(Vector2D point);
-
-	void updateInteractionMatrix();
-	std::vector<Particle> getParticlesInCell(Vector2D particlePosition);
 
 	void render(int width, int height);
 	void update(float dt);
@@ -32,7 +27,14 @@ private:
 	std::vector<float> m_ParticleProperties;
 	std::vector<float> m_ParticleDensities;
 
-	Vector2D calculatePressureForce(int particleIndex);
+	float calculateDensity(Vector2D point);
+	float calculateProperty(Vector2D point);
+
+	Vector2D calculatePressureForce(Particle particle);
+	void updateInteractionMatrix();
+	std::vector<Particle> getParticlesInCell(Vector2D particlePosition);
+
+
 	std::vector<Surface2D> m_Obstacles;
 
 	std::vector<std::vector<MatrixComponenets>> m_InteractionsMatrix;
