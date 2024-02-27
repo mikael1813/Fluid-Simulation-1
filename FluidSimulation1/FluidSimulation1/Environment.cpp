@@ -11,7 +11,7 @@
 
 #include <SDL.h>
 
-constexpr auto particleCount = 10;
+constexpr auto particleCount = 20;
 constexpr auto particleRadius = 5;
 constexpr auto particleRadiusOfRepel = 100;
 constexpr auto particleDistance = 30;
@@ -26,8 +26,6 @@ constexpr int SCREEN_HEIGHT = 720;
 //constexpr float INTERACTION_MATRIX_CELL_WIDTH = particleRadiusOfRepel + (float)(SCREEN_WIDTH - (SCREEN_WIDTH / particleRadiusOfRepel) * particleRadiusOfRepel) / (float)(SCREEN_WIDTH / particleRadiusOfRepel);
 //constexpr float INTERACTION_MATRIX_CELL_HEIGHT = particleRadiusOfRepel + (float)(SCREEN_HEIGHT - (SCREEN_HEIGHT / particleRadiusOfRepel) * particleRadiusOfRepel) / (float)(SCREEN_HEIGHT / particleRadiusOfRepel);
 
-constexpr auto MIN_WIDTH = -500;
-constexpr auto MAX_WIDTH = 1800;
 
 float ExampleFunction(Vector2D point) {
 	return cos(point.Y - 3 + sin(point.X));
@@ -194,7 +192,7 @@ void Environment::render(int width, int height)
 		float color = density / maxDensity;
 
 		glColor4f(color, color, color, 1.0f);
-		DrawCircle(width, height, particle.m_Position.X,particle.m_Position.Y, particleRadius * 2, 20);
+		DrawCircle(width, height, particle.m_Position.X, particle.m_Position.Y, particleRadius * 2, 20);
 
 		glColor4f(1.0, 1.0, 1.0, 0.4f);
 		DrawLine(width, height, particle.m_Position, particle.m_Position + vc);
@@ -292,7 +290,7 @@ float Environment::calculateDensity(Vector2D point) {
 	float density = 0.0f;
 	const float mass = 1.0f;
 
-	for (auto& particle : getParticlesInCell(point)) {
+	for (auto& particle : m_Particles) {
 		float distance = sqrt(squared_distance(point, particle.m_Position));
 		float influence = smoothingKernel(particleRadiusOfRepel, distance);
 		density += mass * influence;
@@ -380,21 +378,8 @@ Vector2D getRandomDir() {
 Vector2D Environment::calculatePressureForce(Particle particle) {
 	Vector2D pressureForce = Vector2D();
 	const float mass = 1.0f;
-	int count = 0;
-	auto uu = getParticlesInCell(particle.m_Position);
+
 	for (auto& otherParticle : getParticlesInCell(particle.m_Position)) {
-		if (particle.m_ID == otherParticle.m_ID) {
-			continue;
-		}
-		float distance = sqrt(squared_distance(particle.m_Position, otherParticle.m_Position));
-		float slope = smoothingKernelDerivative(particleRadiusOfRepel, distance);
-		if (slope != 0) {
-			count++;
-		}
-	}
-	std::vector<Particle> dummy;
-	int count2 = 0;
-	for (auto& otherParticle :m_Particles) {
 
 		if (particle.m_ID == otherParticle.m_ID) {
 			continue;
@@ -406,10 +391,7 @@ Vector2D Environment::calculatePressureForce(Particle particle) {
 		}
 		Vector2D dir = distance < particleRadius ? getRandomDir() : (otherParticle.m_Position - particle.m_Position) / distance;
 		float slope = smoothingKernelDerivative(particleRadiusOfRepel, distance);
-		if (slope != 0) {
-			count2++;
-			dummy.push_back(otherParticle);
-		}
+
 
 		float density = otherParticle.m_Density;
 
@@ -456,20 +438,22 @@ void Environment::updateInteractionMatrix()
 std::vector<Particle> Environment::getParticlesInCell(Vector2D particlePosition) {
 	std::vector<Particle> output;
 
-	try{
+	try {
 
-	int x = particlePosition.Y / particleRadiusOfRepel;
-	int y = particlePosition.X / particleRadiusOfRepel;
+		int x = particlePosition.Y / particleRadiusOfRepel;
+		int y = particlePosition.X / particleRadiusOfRepel;
 
-	for (int i = -1; i < 2; i++) {
-		for (int j = -1; j < 2; j++) {
-			if (x + i < 0 || x + i >= m_InteractionsMatrix.size() || y + j < 0 || y + j >= m_InteractionsMatrix.at(0).size()) {
-				continue;
+		for (int i = -1; i < 2; i++) {
+			for (int j = -1; j < 2; j++) {
+				if (x + i < 0 || x + i >= m_InteractionsMatrix.size() || y + j < 0 || y + j >= m_InteractionsMatrix.at(0).size()) {
+					continue;
+				}
+				//std::cout << x << " " << y << std::endl;
+				output.insert(output.end(),
+					m_InteractionsMatrix.at(x + i).at(y + j).particles.begin(),
+					m_InteractionsMatrix.at(x + i).at(y + j).particles.end());
 			}
-			//std::cout << x << " " << y << std::endl;
-			output.insert(output.end(), m_InteractionsMatrix.at(x).at(y).particles.begin(), m_InteractionsMatrix.at(x).at(y).particles.end());
 		}
-	}
 
 	}
 	catch (std::out_of_range e) {
@@ -482,7 +466,7 @@ std::vector<Particle> Environment::getParticlesInCell(Vector2D particlePosition)
 void Environment::update(float dt) {
 
 
-	updateInteractionMatrix();
+	//updateInteractionMatrix();
 
 	//auto x = getParticlesInCell(m_Particles.at(0).m_Position);
 
@@ -510,7 +494,7 @@ void Environment::update(float dt) {
 
 
 		for (auto& obstacle : m_Obstacles) {
-			if (check_line_segment_circle_intersection(obstacle.Point1, obstacle.Point2,particle.m_Position, particleRadius)) {
+			if (check_line_segment_circle_intersection(obstacle.Point1, obstacle.Point2, particle.m_Position, particleRadius)) {
 				Vector2D normalVector = Math::calculateNormalVector(Math::calculateSlope(obstacle.Point1, obstacle.Point2));
 				Vector2D reflectionVector = Math::calculateReflectionVector(particle.m_Velocity, normalVector);
 
