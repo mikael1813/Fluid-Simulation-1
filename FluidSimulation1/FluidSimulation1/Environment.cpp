@@ -11,7 +11,7 @@
 
 #include <SDL.h>
 
-constexpr auto particleCount = 20;
+constexpr auto particleCount = 15;
 constexpr auto particleRadius = 5;
 constexpr auto particleRadiusOfRepel = 100;
 constexpr auto particleDistance = 30;
@@ -22,10 +22,6 @@ constexpr auto particleRepulsionForce = 5.0f;
 
 constexpr int SCREEN_WIDTH = 1280;
 constexpr int SCREEN_HEIGHT = 720;
-
-//constexpr float INTERACTION_MATRIX_CELL_WIDTH = particleRadiusOfRepel + (float)(SCREEN_WIDTH - (SCREEN_WIDTH / particleRadiusOfRepel) * particleRadiusOfRepel) / (float)(SCREEN_WIDTH / particleRadiusOfRepel);
-//constexpr float INTERACTION_MATRIX_CELL_HEIGHT = particleRadiusOfRepel + (float)(SCREEN_HEIGHT - (SCREEN_HEIGHT / particleRadiusOfRepel) * particleRadiusOfRepel) / (float)(SCREEN_HEIGHT / particleRadiusOfRepel);
-
 
 float ExampleFunction(Vector2D point) {
 	return cos(point.Y - 3 + sin(point.X));
@@ -43,7 +39,7 @@ Environment::Environment() {
 		m_InteractionsMatrix.push_back(row);
 	}
 
-	m_Particles = std::vector<Particle>{};
+	m_Particles = std::vector<Particle*>{};
 
 	// Seed the random number generator
 	std::random_device rd;
@@ -57,7 +53,7 @@ Environment::Environment() {
 			float posY = 200 + j * particleDistance;*/
 			float posX = std::uniform_int_distribution<int>(100, SCREEN_WIDTH - 100)(gen);
 			float posY = std::uniform_int_distribution<int>(100, SCREEN_HEIGHT - 100)(gen);
-			m_Particles.push_back(Particle(posX, posY, count++));
+			m_Particles.push_back(new Particle(posX, posY, count++));
 			m_ParticleProperties.push_back(ExampleFunction(Vector2D(posX, posY)));
 			m_ParticleDensities.push_back(0.0f);
 		}
@@ -179,23 +175,23 @@ void Environment::render(int width, int height)
 	float maxDensity = 0.0f;
 	for (auto& particle : m_Particles) {
 
-		if (particle.m_Density > maxDensity) {
-			maxDensity = particle.m_Density;
+		if (particle->m_Density > maxDensity) {
+			maxDensity = particle->m_Density;
 		}
 	}
 	for (auto& particle : m_Particles) {
 
-		float density = particle.m_Density;
+		float density = particle->m_Density;
 
-		Vector2D vc = particle.m_Velocity;
+		Vector2D vc = particle->m_Velocity;
 
 		float color = density / maxDensity;
 
 		glColor4f(color, color, color, 1.0f);
-		DrawCircle(width, height, particle.m_Position.X, particle.m_Position.Y, particleRadius * 2, 20);
+		DrawCircle(width, height, particle->m_Position.X, particle->m_Position.Y, particleRadius * 2, 20);
 
 		glColor4f(1.0, 1.0, 1.0, 0.4f);
-		DrawLine(width, height, particle.m_Position, particle.m_Position + vc);
+		DrawLine(width, height, particle->m_Position, particle->m_Position + vc);
 		//DrawCircle(renderer, particle.m_Position.X, particle.m_Position.Y, particleRadius);
 
 		//float red, green, blue;
@@ -291,7 +287,8 @@ float Environment::calculateDensity(Vector2D point) {
 	const float mass = 1.0f;
 
 	for (auto& particle : m_Particles) {
-		float distance = sqrt(squared_distance(point, particle.m_Position));
+	//for (auto& particle : getParticlesInCell(point)) {
+		float distance = sqrt(squared_distance(point, particle->m_Position));
 		float influence = smoothingKernel(particleRadiusOfRepel, distance);
 		density += mass * influence;
 	}
@@ -307,7 +304,7 @@ float Environment::calculateProperty(Vector2D point) {
 	const float mass = 1.0f;
 
 	for (int i = 0; i < m_Particles.size(); i++) {
-		float distance = sqrt(squared_distance(point, m_Particles.at(i).m_Position));
+		float distance = sqrt(squared_distance(point, m_Particles.at(i)->m_Position));
 
 		float influence = smoothingKernel(particleRadiusOfRepel, distance);
 
@@ -340,8 +337,8 @@ float Environment::calculateProperty(Vector2D point) {
 //}
 
 float convertDensityToPressure(float density) {
-	const float targetDensity = 0.01f;
-	const float pressureConstant = 1.5f;
+	const float targetDensity = 0.08f;
+	const float pressureConstant = 10.0f;
 
 	float densityError = density - targetDensity;
 	float pressure = pressureConstant * densityError;
@@ -375,27 +372,28 @@ Vector2D getRandomDir() {
 	return direction;
 }
 
-Vector2D Environment::calculatePressureForce(Particle particle) {
+Vector2D Environment::calculatePressureForce(Particle* particle) {
 	Vector2D pressureForce = Vector2D();
 	const float mass = 1.0f;
 
-	for (auto& otherParticle : getParticlesInCell(particle.m_Position)) {
+	for (auto& otherParticle : getParticlesInCell(particle->m_Position)) {
+	//for (auto& otherParticle :m_Particles) {
 
-		if (particle.m_ID == otherParticle.m_ID) {
+		if (particle->m_ID == otherParticle->m_ID) {
 			continue;
 		}
 
-		float distance = sqrt(squared_distance(particle.m_Position, otherParticle.m_Position));
+		float distance = sqrt(squared_distance(particle->m_Position, otherParticle->m_Position));
 		if (distance < particleRadius) {
 			int tt = 0;
 		}
-		Vector2D dir = distance < particleRadius ? getRandomDir() : (otherParticle.m_Position - particle.m_Position) / distance;
+		Vector2D dir = distance < particleRadius ? getRandomDir() : (otherParticle->m_Position - particle->m_Position) / distance;
 		float slope = smoothingKernelDerivative(particleRadiusOfRepel, distance);
 
 
-		float density = otherParticle.m_Density;
+		float density = otherParticle->m_Density;
 
-		float sharedPressure = calculateSharedPressure(density, otherParticle.m_Density);
+		float sharedPressure = calculateSharedPressure(density, otherParticle->m_Density);
 
 		pressureForce += -sharedPressure * dir * slope * mass / density;
 	}
@@ -419,8 +417,8 @@ void Environment::updateInteractionMatrix()
 		}
 
 		for (int i = 0; i < m_Particles.size(); i++) {
-			int x = m_Particles.at(i).m_Position.Y / particleRadiusOfRepel;
-			int y = m_Particles.at(i).m_Position.X / particleRadiusOfRepel;
+			int x = m_Particles.at(i)->m_Position.Y / particleRadiusOfRepel;
+			int y = m_Particles.at(i)->m_Position.X / particleRadiusOfRepel;
 			if (x < 0 || x >= m_InteractionsMatrix.size() || y < 0 || y >= m_InteractionsMatrix.at(0).size()) {
 				continue;
 			}
@@ -435,8 +433,8 @@ void Environment::updateInteractionMatrix()
 	}
 }
 
-std::vector<Particle> Environment::getParticlesInCell(Vector2D particlePosition) {
-	std::vector<Particle> output;
+std::vector<Particle*> Environment::getParticlesInCell(Vector2D particlePosition) {
+	std::vector<Particle*> output;
 
 	try {
 
@@ -466,37 +464,35 @@ std::vector<Particle> Environment::getParticlesInCell(Vector2D particlePosition)
 void Environment::update(float dt) {
 
 
-	//updateInteractionMatrix();
-
-	//auto x = getParticlesInCell(m_Particles.at(0).m_Position);
+	updateInteractionMatrix();
 
 	// Parallelize the loop using OpenMP
-#pragma omp parallel for reduction(+:total)
+//#pragma omp parallel for reduction(+:total)
 	for (auto& particle : m_Particles) {
 
-		/*Vector2D futurePosition = m_Particles.at(i).m_Position + m_Particles.at(i).m_Velocity * dt;
-		m_ParticleDensities.at(i) = calculateDensity(futurePosition);*/
+		Vector2D futurePosition = particle->m_Position + particle->m_Velocity * dt;
+		particle->m_Density = calculateDensity(futurePosition);
 
-		particle.m_Density = calculateDensity(particle.m_Position);
+		//particle.m_Density = calculateDensity(particle.m_Position);
 
 	}
 
-	updateInteractionMatrix();
+	//updateInteractionMatrix();
 
 	for (auto& particle : m_Particles) {
 
 		Vector2D pressureForce = calculatePressureForce(particle);
-		Vector2D pressureAcceleration = pressureForce / particle.m_Density;
+		Vector2D pressureAcceleration = pressureForce / particle->m_Density;
 
-		particle.m_Velocity += pressureAcceleration * dt;
+		particle->m_Velocity += pressureAcceleration * dt;
 
-		particle.update(dt);
+		particle->update(dt);
 
 
 		for (auto& obstacle : m_Obstacles) {
-			if (check_line_segment_circle_intersection(obstacle.Point1, obstacle.Point2, particle.m_Position, particleRadius)) {
+			if (check_line_segment_circle_intersection(obstacle.Point1, obstacle.Point2, particle->m_Position, particleRadius)) {
 				Vector2D normalVector = Math::calculateNormalVector(Math::calculateSlope(obstacle.Point1, obstacle.Point2));
-				Vector2D reflectionVector = Math::calculateReflectionVector(particle.m_Velocity, normalVector);
+				Vector2D reflectionVector = Math::calculateReflectionVector(particle->m_Velocity, normalVector);
 
 				// magnitude of reflection vector
 				float magnitude = sqrt(reflectionVector.X * reflectionVector.X + reflectionVector.Y * reflectionVector.Y);
@@ -505,16 +501,17 @@ void Environment::update(float dt) {
 				/*reflectionVector.X /= magnitude;
 				reflectionVector.Y /= magnitude;*/
 
-				particle.m_Velocity = reflectionVector * 0.1f;
+				particle->m_Velocity = reflectionVector * 0.1f;
 
 				/*particle.m_Velocity.Y = -particle.m_Velocity.Y;*/
 
-				particle.m_Position = particle.m_LastSafePosition;
+				particle->m_Position = particle->m_LastSafePosition;
 			}
 		}
 
 		for (auto& otherParticle : m_Particles) {
-			if (particle.m_ID == otherParticle.m_ID) {
+		//for (auto& otherParticle : getParticlesInCell(particle->m_Position)) {
+			if (particle->m_ID == otherParticle->m_ID) {
 				continue;
 			}
 			//if (squared_distance(m_Particles.at(i).m_Position, m_Particles.at(j).m_Position) <= (particleRadius * particleRadius * 4)) {
@@ -535,8 +532,8 @@ void Environment::update(float dt) {
 
 				//m_Particles.at(i).m_Position = m_Particles.at(i).m_LastSafePosition;
 			//}
-			if (squared_distance(particle.m_Position, otherParticle.m_Position) <= (particleRadius * particleRadius) * 4) {
-				Vector2D normalVector = Vector2D(otherParticle.m_Position.X - particle.m_Position.X, otherParticle.m_Position.Y - particle.m_Position.Y);
+			if (squared_distance(particle->m_Position, otherParticle->m_Position) <= (particleRadius * particleRadius) * 4) {
+				Vector2D normalVector = Vector2D(otherParticle->m_Position.X - particle->m_Position.X, otherParticle->m_Position.Y - particle->m_Position.Y);
 
 				//magnitude of normal vector
 				float magnitude = -1 * sqrt(normalVector.X * normalVector.X + normalVector.Y * normalVector.Y);
@@ -549,9 +546,9 @@ void Environment::update(float dt) {
 				float power = 1;
 				power *= particleRepulsionForce;
 
-				particle.m_Velocity += normalVector * power;
+				particle->m_Velocity += normalVector * power;
 
-				otherParticle.m_Velocity -= normalVector * power;
+				otherParticle->m_Velocity -= normalVector * power;
 
 				int x = 0;
 

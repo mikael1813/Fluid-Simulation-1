@@ -4,7 +4,7 @@
 
 #include <iostream>
 
-constexpr float GRAVITY = 9.0f;
+constexpr float GRAVITY = 10.0f;
 
 
 class Particle {

@@ -7,8 +7,8 @@
 #include <vector>
 
 struct MatrixComponenets {
-	std::vector<Particle> particles;
-	std::vector<Surface2D> obstacles;
+	std::vector<Particle*> particles;
+	std::vector<Surface2D*> obstacles;
 };
 
 
@@ -23,16 +23,16 @@ public:
 	void update(float dt);
 
 private:
-	std::vector<Particle> m_Particles;
+	std::vector<Particle*> m_Particles;
 	std::vector<float> m_ParticleProperties;
 	std::vector<float> m_ParticleDensities;
 
 	float calculateDensity(Vector2D point);
 	float calculateProperty(Vector2D point);
 
-	Vector2D calculatePressureForce(Particle particle);
+	Vector2D calculatePressureForce(Particle* particle);
 	void updateInteractionMatrix();
-	std::vector<Particle> getParticlesInCell(Vector2D particlePosition);
+	std::vector<Particle*> getParticlesInCell(Vector2D particlePosition);
 
 
 	std::vector<Surface2D> m_Obstacles;
