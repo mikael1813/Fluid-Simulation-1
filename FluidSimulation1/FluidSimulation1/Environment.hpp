@@ -30,6 +30,8 @@ private:
 	float calculateDensity(Vector2D point);
 	float calculateProperty(Vector2D point);
 
+	Vector2D calculateViscosityForce(Particle* particle);
+
 	Vector2D calculatePressureForce(Particle* particle);
 	void updateInteractionMatrix();
 	std::vector<Particle*> getParticlesInCell(Vector2D particlePosition);

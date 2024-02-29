@@ -14,6 +14,11 @@ struct Vector2D {
 		Y = y;
 	}
 
+	// Function to calculate the magnitude of a 2D vector (x, y)
+	float magnitude() {
+		return std::sqrt(X * X + Y * Y);
+	}
+
 	// add 2 vectors
 	Vector2D operator+(const Vector2D& other) const {
 		return Vector2D(X + other.X, Y + other.Y);

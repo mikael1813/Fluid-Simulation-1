@@ -12,9 +12,9 @@
 #include <SDL.h>
 #include <chrono>
 
-constexpr auto particleCount = 30;
-constexpr auto particleRadius = 5;
-constexpr auto particleRadiusOfRepel = 100;
+constexpr auto particleCount = 1000;
+constexpr auto particleRadius = 2;
+constexpr auto particleRadiusOfRepel = 50;
 constexpr auto particleDistance = 30;
 
 constexpr auto maximumSpeed = 400.0f;
@@ -23,6 +23,8 @@ constexpr auto particleRepulsionForce = 5.0f;
 
 constexpr int SCREEN_WIDTH = 1280;
 constexpr int SCREEN_HEIGHT = 720;
+
+constexpr float viscosityStrength = 0.1f;
 
 float ExampleFunction(Vector2D point) {
 	return cos(point.Y - 3 + sin(point.X));
@@ -48,16 +50,29 @@ Environment::Environment() {
 
 	int count = 0;
 
-	for (int i = 0; i < particleCount * 2; i++) {
-		for (int j = 0; j < particleCount; j++) {
-			/*float posX = 200 + i * particleDistance;
-			float posY = 200 + j * particleDistance;*/
-			float posX = std::uniform_int_distribution<int>(100, SCREEN_WIDTH - 100)(gen);
-			float posY = std::uniform_int_distribution<int>(100, SCREEN_HEIGHT - 100)(gen);
-			m_Particles.push_back(new Particle(posX, posY, count++));
-			m_ParticleProperties.push_back(ExampleFunction(Vector2D(posX, posY)));
-			m_ParticleDensities.push_back(0.0f);
-		}
+	for (int i = 0; i < particleCount; i++) {
+
+		bool ok;
+		float posX;
+		float posY;
+		do {
+			ok = true;
+
+			posX = std::uniform_int_distribution<int>(100, SCREEN_WIDTH - 100)(gen);
+			posY = std::uniform_int_distribution<int>(100, SCREEN_HEIGHT - 100)(gen);
+
+			for (auto& particle : m_Particles) {
+				if (particle->m_Position.X == posX && particle->m_Position.Y == posY) {
+					ok = false;
+					break;
+				}
+			}
+		} while (!ok);
+
+		m_Particles.push_back(new Particle(posX, posY, count++));
+		m_ParticleProperties.push_back(ExampleFunction(Vector2D(posX, posY)));
+		m_ParticleDensities.push_back(0.0f);
+
 	}
 
 	m_Obstacles.push_back(Surface2D(50, 10, 1200, 11));
@@ -155,20 +170,17 @@ void DrawLine(int width, int height, Vector2D a, Vector2D b) {
 //	SDL_RenderDrawLine(renderer, surface.Point1.X, surface.Point1.Y, surface.Point2.X, surface.Point2.Y);
 //}
 
-// Function to calculate the color based on speed
-void GetSpeedColor(float speed, float& red, float& green, float& blue) {
-	// Normalize the speed between 0 and 1
-	float normalizedSpeed = speed / maximumSpeed; // Adjust maximumSpeed as needed
+// Function to map velocity to color (blue for velocity 0, red for max velocity)
+void velocityToColor(float velocity, float& red, float& green, float& blue) {
+	float maxVelocity = 50.0f; // Maximum velocity in the simulation
 
-	// Interpolate between cyan and bright red based on the normalized speed
-	red = normalizedSpeed;  // Faster objects appear more red
-	green = 1.0f - normalizedSpeed;        // Slower objects appear more green
-	blue = 1.0f;                    // Set blue component to maximum (cyan)
+	// Normalize velocity between 0 and 1
+	float normalizedVelocity = std::min(std::max(velocity / maxVelocity, 0.0f), 1.0f);
 
-	// Clamp color values to [0, 1]
-	red = std::max(0.0f, std::min(1.0f, red));
-	green = std::max(0.0f, std::min(1.0f, green));
-	blue = std::max(0.0f, std::min(1.0f, blue));
+	// Linear interpolation between blue and red based on normalized velocity
+	red = normalizedVelocity;      // Red component increases with velocity
+	green = 0.5f - normalizedVelocity / 2;                  // No green component
+	blue = 1.0f - normalizedVelocity; // Blue component decreases with velocity
 }
 
 void Environment::render(int width, int height)
@@ -182,17 +194,20 @@ void Environment::render(int width, int height)
 	}
 	for (auto& particle : m_Particles) {
 
-		float density = particle->m_Density;
+		//float density = particle->m_Density;
 
 		Vector2D vc = particle->m_Velocity;
 
-		float color = density / maxDensity;
+		//float color = density / maxDensity;
 
-		glColor4f(color, color, color, 1.0f);
+		float blue, green, red;
+		velocityToColor(particle->m_Velocity.magnitude(), red, green, blue);
+
+		glColor4f(red, green, blue, 1.0f);
 		DrawCircle(width, height, particle->m_Position.X, particle->m_Position.Y, particleRadius * 2, 20);
 
 		glColor4f(1.0, 1.0, 1.0, 0.4f);
-		DrawLine(width, height, particle->m_Position, particle->m_Position + vc);
+		//DrawLine(width, height, particle->m_Position, particle->m_Position + vc);
 		//DrawCircle(renderer, particle.m_Position.X, particle.m_Position.Y, particleRadius);
 
 		//float red, green, blue;
@@ -280,6 +295,14 @@ float smoothingKernelDerivative(float radius, float distance) {
 	return 2 * x;
 }
 
+float viscositySmoothingKernel(float radius, float distance) {
+	if (distance >= radius) {
+		return 0.0f;
+	}
+	float x = (radius * radius - distance * distance) / (radius * radius);
+	return x * x * x;
+}
+
 float Environment::calculateDensity(Vector2D point) {
 
 	constexpr auto scalar = 1000;
@@ -336,9 +359,25 @@ float Environment::calculateProperty(Vector2D point) {
 //	return propertyGradient;
 //}
 
+Vector2D Environment::calculateViscosityForce(Particle* particle) {
+
+	Vector2D viscosityForce = Vector2D();
+	Vector2D position = particle->m_Position;
+
+	for (auto& otherParticle : getParticlesInCell(particle->m_Position)) {
+		float distance = sqrt(squared_distance(position, otherParticle->m_Position));
+		float influence = viscositySmoothingKernel(particleRadiusOfRepel, distance);
+
+		viscosityForce += (otherParticle->m_Velocity - particle->m_Velocity) * influence;
+	}
+
+	return viscosityForce * viscosityStrength;
+}
+
 float convertDensityToPressure(float density) {
-	const float targetDensity = 0.08f;
-	const float pressureConstant = 10.0f;
+	const float targetDensity = 0.5f;
+	//const float pressureConstant = 10.0f;
+	const float pressureConstant = 30.0f;
 
 	float densityError = density - targetDensity;
 	float pressure = pressureConstant * densityError;
@@ -496,21 +535,21 @@ void Environment::update(float dt) {
 
 	//time1 = std::chrono::steady_clock::now();
 
-	for (int i = 0; i < m_Particles.size(); i++) {
+	/*for (int i = 0; i < m_Particles.size(); i++) {
 		for (auto& particle : getParticlesInCell(m_Particles.at(i)->m_Position)) {
 
 		}
-	}
+	}*/
 
 	/*time2 = std::chrono::steady_clock::now();
 	tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();*/
 
 
-	for (int i = 0; i < m_Particles.size(); i++) {
+	/*for (int i = 0; i < m_Particles.size(); i++) {
 		for (auto& particle : m_Particles) {
 
 		}
-	}
+	}*/
 
 	// Parallelize the loop using OpenMP
 //#pragma omp parallel for reduction(+:total)
@@ -529,6 +568,10 @@ void Environment::update(float dt) {
 		Vector2D pressureAcceleration = pressureForce / particle->m_Density;
 
 		particle->m_Velocity += pressureAcceleration * dt;
+
+		Vector2D viscosityForce = calculateViscosityForce(particle);
+
+		particle->m_Velocity += viscosityForce * dt;
 
 		particle->update(dt);
 

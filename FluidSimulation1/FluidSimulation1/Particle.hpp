@@ -25,7 +25,7 @@ public:
 
 		Vector2D gravity(0.0f, GRAVITY);
 
-		//m_Velocity += gravity * dt;
+		m_Velocity += gravity * dt;
 
 		m_Position.X += m_Velocity.X * dt;
 		m_Position.Y += m_Velocity.Y * dt;
