@@ -55,8 +55,9 @@ void Application2::events() {
 
 void Application2::loop()
 {
-	float time_passed= 0.0f;
+	float time_passed = 0.0f;
 	int frames = 0;
+	std::chrono::steady_clock::time_point lastTime = std::chrono::steady_clock::now();
 	// Loop until the user closes the window
 	while (!glfwWindowShouldClose(m_window)) {
 
@@ -65,18 +66,32 @@ void Application2::loop()
 
 		//std::cout << deltaTime << std::endl;
 
+		//std::chrono::steady_clock::time_point time1 = std::chrono::steady_clock::now();
+
 		this->update(deltaTime);
+
+		//std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();
+		//double tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
+
+		//time1 = std::chrono::steady_clock::now();
 
 		// Render here
 		this->render();
 
+		//time2 = std::chrono::steady_clock::now();
+		//tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
+
 		this->events();
 
-		time_passed += deltaTime;
+		std::chrono::steady_clock::time_point time = std::chrono::steady_clock::now();
+		double tick = std::chrono::duration_cast<std::chrono::microseconds>(time - lastTime).count() / 1000000.0f;
+		lastTime = time;
+
+		time_passed += tick;
 		frames++;
 
 		if (time_passed >= 1.0f) {
-			std::cout << "FPS: " << frames << std::endl;
+			std::cout << "FPS: " << frames << " " << std::endl;
 			time_passed = 0.0f;
 			frames = 0;
 		}

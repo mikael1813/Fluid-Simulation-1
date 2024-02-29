@@ -10,8 +10,9 @@
 #include <random>
 
 #include <SDL.h>
+#include <chrono>
 
-constexpr auto particleCount = 15;
+constexpr auto particleCount = 30;
 constexpr auto particleRadius = 5;
 constexpr auto particleRadiusOfRepel = 100;
 constexpr auto particleDistance = 30;
@@ -286,8 +287,7 @@ float Environment::calculateDensity(Vector2D point) {
 	float density = 0.0f;
 	const float mass = 1.0f;
 
-	for (auto& particle : m_Particles) {
-	//for (auto& particle : getParticlesInCell(point)) {
+	for (auto& particle : getParticlesInCell(point)) {
 		float distance = sqrt(squared_distance(point, particle->m_Position));
 		float influence = smoothingKernel(particleRadiusOfRepel, distance);
 		density += mass * influence;
@@ -377,7 +377,7 @@ Vector2D Environment::calculatePressureForce(Particle* particle) {
 	const float mass = 1.0f;
 
 	for (auto& otherParticle : getParticlesInCell(particle->m_Position)) {
-	//for (auto& otherParticle :m_Particles) {
+		//for (auto& otherParticle :m_Particles) {
 
 		if (particle->m_ID == otherParticle->m_ID) {
 			continue;
@@ -405,15 +405,17 @@ void Environment::updateInteractionMatrix()
 {
 	// Parallelize the loop using OpenMP
 	//#pragma omp parallel for
+	std::vector<std::vector<MatrixComponenets>> temporary;
 	try {
-		int sum = 0;
+
 
 		for (int i = 0; i < m_InteractionsMatrix.size(); i++) {
+			std::vector<MatrixComponenets> row;
 			for (int j = 0; j < m_InteractionsMatrix.at(0).size(); j++) {
-				//std::cout << i << " " << j << std::endl;
-				sum += m_InteractionsMatrix.at(i).at(j).particles.size();
 				m_InteractionsMatrix.at(i).at(j).particles.clear();
+				row.push_back(MatrixComponenets());
 			}
+			temporary.push_back(row);
 		}
 
 		for (int i = 0; i < m_Particles.size(); i++) {
@@ -424,8 +426,32 @@ void Environment::updateInteractionMatrix()
 			}
 			//std::cout << x << " " << y << " " << i << " " << m_Particles.at(i).m_Position.Y << " " << m_Particles.at(i).m_Position.X << std::endl;
 
-			m_InteractionsMatrix.at(x).at(y).particles.push_back(m_Particles.at(i));
+			temporary.at(x).at(y).particles.push_back(m_Particles.at(i));
 
+		}
+		//for (int particleIndex = 0; particleIndex < m_Particles.size(); particleIndex++) {
+		for (int x = 0; x < m_InteractionsMatrix.size(); x++) {
+			std::vector<MatrixComponenets> row;
+			for (int y = 0; y < m_InteractionsMatrix.at(0).size(); y++) {
+				/*int x = m_Particles.at(particleIndex)->m_Position.Y / particleRadiusOfRepel;
+				int y = m_Particles.at(particleIndex)->m_Position.X / particleRadiusOfRepel;*/
+
+				if (x < 0 || x >= m_InteractionsMatrix.size() || y < 0 || y >= m_InteractionsMatrix.at(0).size()) {
+					continue;
+				}
+
+				for (int i = -1; i < 2; i++) {
+					for (int j = -1; j < 2; j++) {
+						if (x + i < 0 || x + i >= m_InteractionsMatrix.size() || y + j < 0 || y + j >= m_InteractionsMatrix.at(0).size()) {
+							continue;
+						}
+						//std::cout << x << " " << y << " "/* << m_Particles.at(particleIndex)->m_Position.Y << " " << m_Particles.at(particleIndex)->m_Position.X*/ << std::endl;
+						m_InteractionsMatrix.at(x).at(y).particles.insert(m_InteractionsMatrix.at(x).at(y).particles.end(),
+							temporary.at(x + i).at(y + j).particles.begin(),
+							temporary.at(x + i).at(y + j).particles.end());
+					}
+				}
+			}
 		}
 	}
 	catch (std::out_of_range e) {
@@ -436,48 +462,66 @@ void Environment::updateInteractionMatrix()
 std::vector<Particle*> Environment::getParticlesInCell(Vector2D particlePosition) {
 	std::vector<Particle*> output;
 
-	try {
+	//try {
 
-		int x = particlePosition.Y / particleRadiusOfRepel;
-		int y = particlePosition.X / particleRadiusOfRepel;
+	int x = particlePosition.Y / particleRadiusOfRepel;
+	int y = particlePosition.X / particleRadiusOfRepel;
 
-		for (int i = -1; i < 2; i++) {
-			for (int j = -1; j < 2; j++) {
-				if (x + i < 0 || x + i >= m_InteractionsMatrix.size() || y + j < 0 || y + j >= m_InteractionsMatrix.at(0).size()) {
-					continue;
-				}
-				//std::cout << x << " " << y << std::endl;
-				output.insert(output.end(),
-					m_InteractionsMatrix.at(x + i).at(y + j).particles.begin(),
-					m_InteractionsMatrix.at(x + i).at(y + j).particles.end());
-			}
-		}
-
-	}
-	catch (std::out_of_range e) {
-		std::cout << e.what() << std::endl;
+	if (x < 0 || x >= m_InteractionsMatrix.size() || y < 0 || y >= m_InteractionsMatrix.at(0).size()) {
+		return output;
 	}
 
-	return output;
+	//for (int i = -1; i < 2; i++) {
+	//	for (int j = -1; j < 2; j++) {
+	//		if (x + i < 0 || x + i >= m_InteractionsMatrix.size() || y + j < 0 || y + j >= m_InteractionsMatrix.at(0).size()) {
+	//			continue;
+	//		}
+	//		//std::cout << x << " " << y << std::endl;
+	//		output.insert(output.end(),
+	//			m_InteractionsMatrix.at(x + i).at(y + j).particles.begin(),
+	//			m_InteractionsMatrix.at(x + i).at(y + j).particles.end());
+	//	}
+	//}
+	return m_InteractionsMatrix.at(x).at(y).particles;
 }
 
 void Environment::update(float dt) {
 
-
+	//std::chrono::steady_clock::time_point time1 = std::chrono::steady_clock::now();
 	updateInteractionMatrix();
+
+	/*std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();
+	double tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();*/
+
+
+	//time1 = std::chrono::steady_clock::now();
+
+	for (int i = 0; i < m_Particles.size(); i++) {
+		for (auto& particle : getParticlesInCell(m_Particles.at(i)->m_Position)) {
+
+		}
+	}
+
+	/*time2 = std::chrono::steady_clock::now();
+	tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();*/
+
+
+	for (int i = 0; i < m_Particles.size(); i++) {
+		for (auto& particle : m_Particles) {
+
+		}
+	}
 
 	// Parallelize the loop using OpenMP
 //#pragma omp parallel for reduction(+:total)
 	for (auto& particle : m_Particles) {
 
-		Vector2D futurePosition = particle->m_Position + particle->m_Velocity * dt;
-		particle->m_Density = calculateDensity(futurePosition);
+		/*Vector2D futurePosition = particle->m_Position + particle->m_Velocity * dt;
+		particle->m_Density = calculateDensity(futurePosition);*/
 
-		//particle.m_Density = calculateDensity(particle.m_Position);
+		particle->m_Density = calculateDensity(particle->m_Position);
 
 	}
-
-	//updateInteractionMatrix();
 
 	for (auto& particle : m_Particles) {
 
@@ -509,8 +553,8 @@ void Environment::update(float dt) {
 			}
 		}
 
-		for (auto& otherParticle : m_Particles) {
-		//for (auto& otherParticle : getParticlesInCell(particle->m_Position)) {
+		//for (auto& otherParticle : m_Particles) {
+		for (auto& otherParticle : getParticlesInCell(particle->m_Position)) {
 			if (particle->m_ID == otherParticle->m_ID) {
 				continue;
 			}

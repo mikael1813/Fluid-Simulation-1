@@ -10,8 +10,8 @@ float Timer::GetTime() {
 
 	tick = tick / 1000000.0f;
 
-	if (tick > 0.1f) {
-		tick = 0.1f;
+	if (tick > 0.01f) {
+		tick = 0.01f;
 	}
 
 	m_lastTime = current_time;
