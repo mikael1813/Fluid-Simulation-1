@@ -12,7 +12,7 @@
 #include <SDL.h>
 #include <chrono>
 
-constexpr auto particleCount = 1000;
+constexpr auto particleCount = 1500;
 constexpr auto particleRadius = 2;
 constexpr auto particleRadiusOfRepel = 50;
 constexpr auto particleDistance = 30;
@@ -79,6 +79,10 @@ Environment::Environment() {
 	m_Obstacles.push_back(Surface2D(50, 10, 50, 700));
 	m_Obstacles.push_back(Surface2D(50, 699, 1200, 700));
 	m_Obstacles.push_back(Surface2D(1200, 10, 1200, 700));
+
+	m_Obstacles.push_back(Surface2D(500, 400, 600, 300));
+	m_Obstacles.push_back(Surface2D(600, 300, 700, 400));
+	m_Obstacles.push_back(Surface2D(700, 400, 500, 400));
 
 
 }
@@ -582,13 +586,14 @@ void Environment::update(float dt) {
 				Vector2D reflectionVector = Math::calculateReflectionVector(particle->m_Velocity, normalVector);
 
 				// magnitude of reflection vector
-				float magnitude = sqrt(reflectionVector.X * reflectionVector.X + reflectionVector.Y * reflectionVector.Y);
+				//float magnitude = sqrt(reflectionVector.X * reflectionVector.X + reflectionVector.Y * reflectionVector.Y);
 
 				// normalize the reflection vector
 				/*reflectionVector.X /= magnitude;
 				reflectionVector.Y /= magnitude;*/
 
-				particle->m_Velocity = reflectionVector * 0.1f;
+				//particle->m_Velocity = reflectionVector * 0.1f;
+				particle->m_Velocity = reflectionVector * 0.0f;
 
 				/*particle.m_Velocity.Y = -particle.m_Velocity.Y;*/
 
