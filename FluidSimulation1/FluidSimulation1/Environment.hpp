@@ -5,6 +5,7 @@
 #include "SDL.h"
 
 #include <vector>
+#include "thread"
 
 struct MatrixComponenets {
 	std::vector<Particle*> particles;
@@ -27,8 +28,18 @@ private:
 	std::vector<float> m_ParticleProperties;
 	std::vector<float> m_ParticleDensities;
 
+	std::vector<std::thread> m_Threads;
+
 	float calculateDensity(Vector2D point);
 	float calculateProperty(Vector2D point);
+
+	void renderParticles(int width, int height);
+
+	void updateParticleDensities(int start, int end);
+	void updateParticles(double dt, int start, int end);
+
+	void parallelUpdateParticleDensities();
+	void parallelUpdateParticles(double dt);
 
 	Vector2D calculateViscosityForce(Particle* particle);
 
