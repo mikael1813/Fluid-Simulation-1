@@ -228,13 +228,12 @@ void Environment::render(int width, int height)
 		}
 	}*/
 
+	this->renderParticles(width, height);
 
 	for (auto& obstacle : m_Obstacles) {
 		glColor3f(1.0, 1.0, 1.0);
 		DrawLine(width, height, obstacle.Point1, obstacle.Point2);
 	}
-
-	this->renderParticles(width, height);
 }
 
 // Function to compute the squared distance between two points
