@@ -44,6 +44,7 @@ private:
 	Vector2D calculateViscosityForce(Particle* particle);
 
 	Vector2D calculatePressureForce(Particle* particle);
+	void addToInteractionMatrixCellSurroundingCells(int x, int y, std::vector<std::vector<MatrixComponenets>>& temporary);
 	void updateInteractionMatrix();
 	std::vector<Particle*> getParticlesInCell(Vector2D particlePosition);
 

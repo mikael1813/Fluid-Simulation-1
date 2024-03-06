@@ -14,7 +14,7 @@
 
 #include <mutex> 
 
-constexpr auto particleCount = 1000;
+constexpr auto particleCount = 5000;
 constexpr auto particleRadius = 2;
 constexpr auto particleRadiusOfRepel = 50;
 constexpr auto particleDistance = 30;
@@ -443,6 +443,23 @@ Vector2D Environment::calculatePressureForce(Particle* particle) {
 	return pressureForce;
 }
 
+void Environment::addToInteractionMatrixCellSurroundingCells(int x, int y, std::vector<std::vector<MatrixComponenets>>& temporary) {
+	if (x < 0 || x >= m_InteractionsMatrix.size() || y < 0 || y >= m_InteractionsMatrix.at(0).size()) {
+		return;
+	}
+
+	for (int i = -1; i < 2; i++) {
+		for (int j = -1; j < 2; j++) {
+			if (x + i < 0 || x + i >= m_InteractionsMatrix.size() || y + j < 0 || y + j >= m_InteractionsMatrix.at(0).size()) {
+				continue;
+			}
+			m_InteractionsMatrix.at(x).at(y).particles.insert(m_InteractionsMatrix.at(x).at(y).particles.end(),
+				temporary.at(x + i).at(y + j).particles.begin(),
+				temporary.at(x + i).at(y + j).particles.end());
+		}
+	}
+}
+
 void Environment::updateInteractionMatrix()
 {
 	// Parallelize the loop using OpenMP
@@ -474,23 +491,26 @@ void Environment::updateInteractionMatrix()
 	// to do: in case that the matrix is much bigger than the number of particles, we don't need to iterate through the whole matrix and we
 	// can use the particle's position to find the cell
 
-	for (int x = 0; x < m_InteractionsMatrix.size(); x++) {
-		for (int y = 0; y < m_InteractionsMatrix.at(0).size(); y++) {
+	if (m_Particles.size() < m_InteractionsMatrix.size() * m_InteractionsMatrix.at(0).size()) {
 
-			if (x < 0 || x >= m_InteractionsMatrix.size() || y < 0 || y >= m_InteractionsMatrix.at(0).size()) {
+		for (auto& particle : m_Particles) {
+			int x = particle->m_Position.Y / particleRadiusOfRepel;
+			int y = particle->m_Position.X / particleRadiusOfRepel;
+
+			if (m_InteractionsMatrix.at(x).at(y).particles.size() > 0) {
 				continue;
 			}
 
-			for (int i = -1; i < 2; i++) {
-				for (int j = -1; j < 2; j++) {
-					if (x + i < 0 || x + i >= m_InteractionsMatrix.size() || y + j < 0 || y + j >= m_InteractionsMatrix.at(0).size()) {
-						continue;
-					}
-					m_InteractionsMatrix.at(x).at(y).particles.insert(m_InteractionsMatrix.at(x).at(y).particles.end(),
-						temporary.at(x + i).at(y + j).particles.begin(),
-						temporary.at(x + i).at(y + j).particles.end());
-				}
-			}
+			this->addToInteractionMatrixCellSurroundingCells(x, y, temporary);
+		}
+
+		return;
+	}
+
+	for (int x = 0; x < m_InteractionsMatrix.size(); x++) {
+		for (int y = 0; y < m_InteractionsMatrix.at(0).size(); y++) {
+
+			this->addToInteractionMatrixCellSurroundingCells(x, y, temporary);
 		}
 	}
 }
