@@ -9,10 +9,6 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 
 Application2::Application2()
 {
-
-	m_is_running = true;
-
-
 	// Initialize GLFW
 	if (!glfwInit()) {
 		std::cerr << "Failed to initialize GLFW" << std::endl;
@@ -41,8 +37,6 @@ Application2::Application2()
 
 Application2::~Application2()
 {
-	/*SDL_FreeSurface(m_window_surface);
-	SDL_DestroyWindow(m_window);*/
 	glfwTerminate();
 	delete m_environment;
 }
@@ -61,7 +55,7 @@ void Application2::loop()
 	// Loop until the user closes the window
 	while (!glfwWindowShouldClose(m_window)) {
 
-		double deltaTime = Timer::GetInstance()->GetTime();
+		double deltaTime = Timer::getInstance()->getTime();
 
 
 		//std::cout << deltaTime << std::endl;
@@ -129,14 +123,7 @@ void Application2::render()
 	glLoadIdentity();
 	glOrtho(-aspectRatio, aspectRatio, -1.0f, 1.0f, -1.0f, 1.0f);
 
-	/*float x = 640.0f, y = 360.0f, radius = 100.0f;
-	float ndcX = (2.0f * x) / m_width - 1.0f;
-	float ndcX2 = (2.0f * (x + 100.0f)) / m_width - 1.0f;
-	float ndcY = 1.0f - (2.0f * y) / m_height;
-	float ndcRadius = (2.0f * radius) / m_width;*/
-
-	// Draw a circle
-
+	// Render environment
 	m_environment->render(m_width, m_height);
 
 	// Swap front and back buffers

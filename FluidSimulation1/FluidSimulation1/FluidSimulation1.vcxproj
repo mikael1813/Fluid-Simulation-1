@@ -137,13 +137,16 @@
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="Application2.cpp" />
     <ClCompile Include="Environment.cpp" />
+    <ClCompile Include="InteractionMatrixClass.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Phisics.cpp" />
     <ClCompile Include="Timer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.hpp" />
     <ClInclude Include="Application2.hpp" />
     <ClInclude Include="Environment.hpp" />
+    <ClInclude Include="InteractionMatrixClass.hpp" />
     <ClInclude Include="Particle.hpp" />
     <ClInclude Include="Phisics.hpp" />
     <ClInclude Include="Timer.hpp" />

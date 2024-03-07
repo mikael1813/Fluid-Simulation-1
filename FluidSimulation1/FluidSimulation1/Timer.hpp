@@ -5,13 +5,13 @@
 class Timer {
 public:
 
-	static Timer* GetInstance() {
-		return s_instance = (s_instance != nullptr) ? s_instance : new Timer();
+	static Timer* getInstance() {
+		return s_Instance = (s_Instance != nullptr) ? s_Instance : new Timer();
 	}
 
-	float GetTime();
+	float getTime();
 private:
-	static Timer* s_instance;
+	static Timer* s_Instance;
 
 	std::chrono::steady_clock::time_point m_lastTime = std::chrono::steady_clock::now();
 

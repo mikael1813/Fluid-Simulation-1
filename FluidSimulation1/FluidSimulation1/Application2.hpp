@@ -19,23 +19,14 @@ public:
     void loop();
     void render();
 
-    void DrawCircle(float x, float y, float radius, int num_segments);
-
     void update(float dt);
 
     void mousePress(SDL_MouseButtonEvent& b);
 private:
-    /*SDL_Window* m_window;
-    SDL_Surface* m_window_surface;
-    SDL_Renderer* m_renderer;*/
 
     GLFWwindow* m_window;
 
     Environment* m_environment;
 
     int m_width, m_height;
-
-    //SDL_Event m_window_event;
-
-    bool m_is_running;
 };

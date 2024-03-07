@@ -83,7 +83,7 @@ void Application::loop()
 	while (m_is_running) {
 		events();
 
-		double deltaTime = Timer::GetInstance()->GetTime();
+		double deltaTime = Timer::getInstance()->getTime();
 
 		//std::cout << deltaTime << std::endl;
 

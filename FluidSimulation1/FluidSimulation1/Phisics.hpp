@@ -19,6 +19,8 @@ struct Vector2D {
 		return std::sqrt(X * X + Y * Y);
 	}
 
+	static Vector2D getRandomDirection();
+
 	// add 2 vectors
 	Vector2D operator+(const Vector2D& other) const {
 		return Vector2D(X + other.X, Y + other.Y);
@@ -89,65 +91,18 @@ class Math {
 
 public:
 
-	// Function to calculate the slope of a line given two points
-	static double calculateSlope(Vector2D a, Vector2D b) {
-		// Ensure x2 is not equal to x1 to avoid division by zero
-		if (a.X == b.X) {
-			/*std::cerr << "Error: Division by zero (x2 - x1 = 0)" << std::endl;*/
-			return INFINITY;
-		}
+	// Function to compute the squared distance between two points
+	static float squared_distance(const Vector2D& p1, const Vector2D& p2);
 
-		// Calculate the slope using the formula (y2 - y1) / (x2 - x1)
-		return (b.Y - a.Y) / (b.X - a.X);
-	}
+	// Function to calculate the slope of a line given two points
+	static double calculateSlope(Vector2D a, Vector2D b);
 
 	// Function to calculate the normal vector given the slope of the surface line
-	static Vector2D calculateNormalVector(double surfaceLineSlope) {
-		// Calculate the slope of the perpendicular line
-		double perpendicularLineSlope;
-
-		if (surfaceLineSlope == 0.0) {
-			// Handle the case when the surface line is horizontal (slope is 0)
-			perpendicularLineSlope = INFINITY; // Treat the perpendicular line slope as infinity
-		}
-		else {
-			// Calculate the slope of the perpendicular line (negative reciprocal)
-			perpendicularLineSlope = -1.0 / surfaceLineSlope;
-		}
-
-		// The normal vector is represented by the coefficients (1, m), where m is the perpendicular line slope
-		double normalX = 1.0;
-		double normalY = perpendicularLineSlope;
-
-		// Calculate the magnitude of the normal vector
-		double magnitude = sqrt(normalX * normalX + normalY * normalY);
-
-		// Normalize the components to obtain the direction of the normal vector
-		normalX /= magnitude;
-		normalY /= magnitude;
-
-		/*if (abs(normalY) > 1.0) {
-			normalX /= normalY;
-			if (normalY == INFINITY) {
-				normalY = 1.0;
-			}
-			else {
-				normalY /= normalY;
-			}
-		}*/
-
-		return Vector2D(normalX, normalY);
-	}
+	static Vector2D calculateNormalVector(double surfaceLineSlope);
 
 	// Function to calculate the reflection vector given the incident vector and the normal vector
-	static Vector2D calculateReflectionVector(const Vector2D& incidentVector, const Vector2D& normalVector) {
-		// Calculate the dot product of the incident vector and the normal vector
-		double dotProduct = incidentVector.X * normalVector.X + incidentVector.Y * normalVector.Y;
+	static Vector2D calculateReflectionVector(const Vector2D& incidentVector, const Vector2D& normalVector);
 
-		// Calculate the reflection vector
-		Vector2D reflectionVector = Vector2D(incidentVector.X - 2 * dotProduct * normalVector.X,
-			incidentVector.Y - 2 * dotProduct * normalVector.Y);
-
-		return reflectionVector;
-	}
+	// Check if the line segment AB intersects the circle with center C and radius R
+	static bool check_line_segment_circle_intersection(const Vector2D& A, const Vector2D& B, const Vector2D& C, float radius);
 };
