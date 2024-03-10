@@ -36,7 +36,7 @@ private:
 	void renderParticles(int width, int height);
 
 	void updateParticleDensities(int start, int end);
-	void updateParticles(double dt, int start, int end);
+	void calculateFutureVelocitiesAndCheckCollisions(double dt, int start, int end);
 
 	void parallelUpdateParticleDensities();
 	void parallelUpdateParticles(double dt);

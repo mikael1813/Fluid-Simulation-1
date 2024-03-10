@@ -14,17 +14,20 @@
 
 #include <mutex> 
 
-constexpr auto particleCount = 5000;
+constexpr auto particleCount = 1000;
 constexpr auto particleRadius = 2;
 constexpr auto particleRadiusOfRepel = 50;
 constexpr auto particleDistance = 30;
 
-constexpr auto particleRepulsionForce = 5.0f;
+constexpr auto particleRepulsionForce = 1.0f;
 
 constexpr int SCREEN_WIDTH = 1280;
 constexpr int SCREEN_HEIGHT = 720;
 
+//constexpr float viscosityStrength = 0.0f;
 constexpr float viscosityStrength = 0.1f;
+
+constexpr float HOW_FAR_INTO_THE_FUTURE = 10.0f;
 
 constexpr int THREAD_COUNT = 8;
 
@@ -66,7 +69,7 @@ Environment::Environment() {
 			posY = std::uniform_int_distribution<int>(100, SCREEN_HEIGHT - 100)(gen);
 
 			for (auto& particle : m_Particles) {
-				if (particle->m_Position.X == posX && particle->m_Position.Y == posY) {
+				if (particle->getPosition().X == posX && particle->getPosition().Y == posY) {
 					ok = false;
 					break;
 				}
@@ -203,15 +206,15 @@ void Environment::renderParticles(int width, int height) {
 
 		//float density = particle->m_Density;
 
-		Vector2D vc = particle->m_Velocity;
+		Vector2D vc = particle->getVelocity();
 
 		//float color = density / maxDensity;
 
 		float blue, green, red;
-		velocityToColor(particle->m_Velocity.magnitude(), red, green, blue);
+		velocityToColor(particle->getVelocity().magnitude(), red, green, blue);
 
 		glColor4f(red, green, blue, 1.0f);
-		DrawCircle(width, height, particle->m_Position.X, particle->m_Position.Y, particleRadius * 2, 20);
+		DrawCircle(width, height, particle->getPosition().X, particle->getPosition().Y, particleRadius * 2, 20);
 
 		/*glColor4f(1.0, 1.0, 1.0, 0.4f);
 		DrawLine(width, height, particle->m_Position, particle->m_Position + vc);*/
@@ -313,7 +316,7 @@ float Environment::calculateDensity(Vector2D point) {
 	const float mass = 1.0f;
 
 	for (auto& particle : getParticlesInCell(point)) {
-		float distance = sqrt(squared_distance(point, particle->m_Position));
+		float distance = sqrt(squared_distance(point, particle->m_PredictedPosition));
 		float influence = smoothingKernel(particleRadiusOfRepel, distance);
 		density += mass * influence;
 	}
@@ -329,7 +332,7 @@ float Environment::calculateProperty(Vector2D point) {
 	const float mass = 1.0f;
 
 	for (int i = 0; i < m_Particles.size(); i++) {
-		float distance = sqrt(squared_distance(point, m_Particles.at(i)->m_Position));
+		float distance = sqrt(squared_distance(point, m_Particles.at(i)->m_PredictedPosition));
 
 		float influence = smoothingKernel(particleRadiusOfRepel, distance);
 
@@ -364,20 +367,20 @@ float Environment::calculateProperty(Vector2D point) {
 Vector2D Environment::calculateViscosityForce(Particle* particle) {
 
 	Vector2D viscosityForce = Vector2D();
-	Vector2D position = particle->m_Position;
+	Vector2D position = particle->m_PredictedPosition;
 
-	for (auto& otherParticle : getParticlesInCell(particle->m_Position)) {
-		float distance = sqrt(squared_distance(position, otherParticle->m_Position));
+	for (auto& otherParticle : getParticlesInCell(particle->m_PredictedPosition)) {
+		float distance = sqrt(squared_distance(position, otherParticle->m_PredictedPosition));
 		float influence = viscositySmoothingKernel(particleRadiusOfRepel, distance);
 
-		viscosityForce += (otherParticle->m_Velocity - particle->m_Velocity) * influence;
+		viscosityForce += (otherParticle->getVelocity() - particle->getVelocity()) * influence;
 	}
 
 	return viscosityForce * viscosityStrength;
 }
 
 float convertDensityToPressure(float density) {
-	const float targetDensity = 0.5f;
+	const float targetDensity = 0.4f;
 	//const float pressureConstant = 10.0f;
 	const float pressureConstant = 30.0f;
 
@@ -417,18 +420,18 @@ Vector2D Environment::calculatePressureForce(Particle* particle) {
 	Vector2D pressureForce = Vector2D();
 	const float mass = 1.0f;
 
-	for (auto& otherParticle : getParticlesInCell(particle->m_Position)) {
+	for (auto& otherParticle : getParticlesInCell(particle->m_PredictedPosition)) {
 		//for (auto& otherParticle :m_Particles) {
 
 		if (particle->m_ID == otherParticle->m_ID) {
 			continue;
 		}
 
-		float distance = sqrt(squared_distance(particle->m_Position, otherParticle->m_Position));
+		float distance = sqrt(squared_distance(particle->m_PredictedPosition, otherParticle->m_PredictedPosition));
 		if (distance < particleRadius) {
 			int tt = 0;
 		}
-		Vector2D dir = distance < particleRadius ? getRandomDir() : (otherParticle->m_Position - particle->m_Position) / distance;
+		Vector2D dir = distance < particleRadius ? getRandomDir() : (otherParticle->m_PredictedPosition - particle->m_PredictedPosition) / distance;
 		float slope = smoothingKernelDerivative(particleRadiusOfRepel, distance);
 
 
@@ -476,8 +479,8 @@ void Environment::updateInteractionMatrix()
 	}
 
 	for (int i = 0; i < m_Particles.size(); i++) {
-		int x = m_Particles.at(i)->m_Position.Y / particleRadiusOfRepel;
-		int y = m_Particles.at(i)->m_Position.X / particleRadiusOfRepel;
+		int x = m_Particles.at(i)->m_PredictedPosition.Y / particleRadiusOfRepel;
+		int y = m_Particles.at(i)->m_PredictedPosition.X / particleRadiusOfRepel;
 		if (x < 0 || x >= m_InteractionsMatrix.size() || y < 0 || y >= m_InteractionsMatrix.at(0).size()) {
 			continue;
 		}
@@ -493,8 +496,8 @@ void Environment::updateInteractionMatrix()
 	if (m_Particles.size() < m_InteractionsMatrix.size() * m_InteractionsMatrix.at(0).size()) {
 
 		for (auto& particle : m_Particles) {
-			int x = particle->m_Position.Y / particleRadiusOfRepel;
-			int y = particle->m_Position.X / particleRadiusOfRepel;
+			int x = particle->m_PredictedPosition.Y / particleRadiusOfRepel;
+			int y = particle->m_PredictedPosition.X / particleRadiusOfRepel;
 
 			if (m_InteractionsMatrix.at(x).at(y).particles.size() > 0) {
 				continue;
@@ -535,12 +538,12 @@ void Environment::updateParticleDensities(int start, int end) {
 		/*Vector2D futurePosition = particle->m_Position + particle->m_Velocity * dt;
 		particle->m_Density = calculateDensity(futurePosition);*/
 
-		particle->m_Density = calculateDensity(particle->m_Position);
+		particle->m_Density = calculateDensity(particle->m_PredictedPosition);
 
 	}
 }
 
-void Environment::updateParticles(double dt, int start, int end) {
+void Environment::calculateFutureVelocitiesAndCheckCollisions(double dt, int start, int end) {
 	for (int i = start; i < end; i++) {
 
 		Particle* particle = m_Particles.at(i);
@@ -548,86 +551,89 @@ void Environment::updateParticles(double dt, int start, int end) {
 		Vector2D pressureForce = calculatePressureForce(particle);
 		Vector2D pressureAcceleration = pressureForce / particle->m_Density;
 
-		particle->m_Velocity += pressureAcceleration * dt;
+		//Vector2D viscosityForce = calculateViscosityForce(particle);
+		Vector2D viscosityForce = Vector2D();
 
-		Vector2D viscosityForce = calculateViscosityForce(particle);
+		particle->m_FutureVelocity = particle->getVelocity() + pressureAcceleration * dt + viscosityForce * dt;
 
-		particle->m_Velocity += viscosityForce * dt;
-
-		particle->update(dt);
-
-
-		for (auto& obstacle : m_Obstacles) {
-			if (check_line_segment_circle_intersection(obstacle.Point1, obstacle.Point2, particle->m_Position, particleRadius)) {
-				/*Vector2D normalVector = Math::calculateNormalVector(Math::calculateSlope(obstacle.Point1, obstacle.Point2));
-				Vector2D reflectionVector = Math::calculateReflectionVector(particle->m_Velocity, normalVector);*/
-
-				// magnitude of reflection vector
-				//float magnitude = sqrt(reflectionVector.X * reflectionVector.X + reflectionVector.Y * reflectionVector.Y);
-
-				// normalize the reflection vector
-				/*reflectionVector.X /= magnitude;
-				reflectionVector.Y /= magnitude;*/
-
-				//particle->m_Velocity = reflectionVector * 0.1f;
-				particle->m_Velocity = Vector2D();
-
-				/*particle.m_Velocity.Y = -particle.m_Velocity.Y;*/
-
-				particle->m_Position = particle->m_LastSafePosition;
-
-				break;
-			}
-		}
-
-		//for (auto& otherParticle : m_Particles) {
-		for (auto& otherParticle : getParticlesInCell(particle->m_Position)) {
-			if (particle->m_ID == otherParticle->m_ID) {
-				continue;
-			}
-			//if (squared_distance(m_Particles.at(i).m_Position, m_Particles.at(j).m_Position) <= (particleRadius * particleRadius * 4)) {
-
-				//Vector2D normalVector = Vector2D(m_Particles.at(j).m_Position.X - m_Particles.at(i).m_Position.X, m_Particles.at(j).m_Position.Y - m_Particles.at(i).m_Position.Y);
-
-				////magnitude of normal vector
-				//float magnitude = sqrt(normalVector.X * normalVector.X + normalVector.Y * normalVector.Y);
-
-				//// normalize the normal vector
-				//normalVector.X /= magnitude;
-				//normalVector.Y /= magnitude;
-
-				//Vector2D reflectionVector = Math::calculateReflectionVector(m_Particles.at(i).m_Velocity, normalVector);
-
-				////m_Particles.at(i).m_Velocity = reflectionVector * 0.1f;
+		//particle->update(dt);
 
 
-				//m_Particles.at(i).m_Position = m_Particles.at(i).m_LastSafePosition;
-			//}
-			if (squared_distance(particle->m_Position, otherParticle->m_Position) <= (particleRadius * particleRadius) * 4) {
-				Vector2D normalVector = Vector2D(otherParticle->m_Position.X - particle->m_Position.X, otherParticle->m_Position.Y - particle->m_Position.Y);
+		//for (auto& obstacle : m_Obstacles) {
+		//	if (check_line_segment_circle_intersection(obstacle.Point1, obstacle.Point2, particle->m_Position, particleRadius)) {
+		//		/*Vector2D normalVector = Math::calculateNormalVector(Math::calculateSlope(obstacle.Point1, obstacle.Point2));
+		//		Vector2D reflectionVector = Math::calculateReflectionVector(particle->m_Velocity, normalVector);*/
 
-				//magnitude of normal vector
-				float magnitude = -1 * sqrt(normalVector.X * normalVector.X + normalVector.Y * normalVector.Y);
+		//		// magnitude of reflection vector
+		//		//float magnitude = sqrt(reflectionVector.X * reflectionVector.X + reflectionVector.Y * reflectionVector.Y);
 
-				// normalize the normal vector
-				normalVector.X /= magnitude;
-				normalVector.Y /= magnitude;
+		//		// normalize the reflection vector
+		//		/*reflectionVector.X /= magnitude;
+		//		reflectionVector.Y /= magnitude;*/
 
-				//float power = smoothing_kernel(particleRadiusOfRepel - particleRadius, sqrt(squared_distance(m_Particles.at(i).m_Position, m_Particles.at(j).m_Position)) - particleRadius * 2);
-				float power = 1;
-				power *= particleRepulsionForce;
+		//		//particle->m_Velocity = reflectionVector * 0.1f;
+		//		particle->m_FutureVelocity = Vector2D();
 
-				particle->m_Velocity += normalVector * power;
+		//		/*particle.m_Velocity.Y = -particle.m_Velocity.Y;*/
 
-				otherParticle->m_Velocity -= normalVector * power;
+		//		particle->m_Position = particle->m_LastSafePosition;
 
-				int x = 0;
+		//		break;
+		//	}
+		//}
 
-				//particle.m_Position = particle.m_LastSafePosition;
-			}
-		}
+		////for (auto& otherParticle : m_Particles) {
+		//for (auto& otherParticle : getParticlesInCell(particle->m_Position)) {
+		//	if (particle->m_ID == otherParticle->m_ID) {
+		//		continue;
+		//	}
+		//	//if (squared_distance(m_Particles.at(i).m_Position, m_Particles.at(j).m_Position) <= (particleRadius * particleRadius * 4)) {
+
+		//		//Vector2D normalVector = Vector2D(m_Particles.at(j).m_Position.X - m_Particles.at(i).m_Position.X, m_Particles.at(j).m_Position.Y - m_Particles.at(i).m_Position.Y);
+
+		//		////magnitude of normal vector
+		//		//float magnitude = sqrt(normalVector.X * normalVector.X + normalVector.Y * normalVector.Y);
+
+		//		//// normalize the normal vector
+		//		//normalVector.X /= magnitude;
+		//		//normalVector.Y /= magnitude;
+
+		//		//Vector2D reflectionVector = Math::calculateReflectionVector(m_Particles.at(i).m_Velocity, normalVector);
+
+		//		////m_Particles.at(i).m_Velocity = reflectionVector * 0.1f;
+
+
+		//		//m_Particles.at(i).m_Position = m_Particles.at(i).m_LastSafePosition;
+		//	//}
+		//	if (squared_distance(particle->m_Position, otherParticle->m_Position) <= (particleRadius * particleRadius) * 4) {
+		//		Vector2D normalVector = Vector2D(otherParticle->m_Position.X - particle->m_Position.X, otherParticle->m_Position.Y - particle->m_Position.Y);
+
+		//		//magnitude of normal vector
+		//		float magnitude = -1 * sqrt(normalVector.X * normalVector.X + normalVector.Y * normalVector.Y);
+
+		//		// normalize the normal vector
+		//		normalVector.X /= magnitude;
+		//		normalVector.Y /= magnitude;
+
+		//		//float power = smoothing_kernel(particleRadiusOfRepel - particleRadius, sqrt(squared_distance(m_Particles.at(i).m_Position, m_Particles.at(j).m_Position)) - particleRadius * 2);
+		//		float power = 1;
+		//		power *= particleRepulsionForce;
+
+		//		particle->m_FutureVelocity += normalVector * power;
+
+		//		otherParticle->m_FutureVelocity -= normalVector * power;
+
+		//		int x = 0;
+
+		//		//particle.m_Position = particle.m_LastSafePosition;
+		//	}
+		//}
 	}
 }
+
+//void Environment::checkCollisions(double dt, int start, int end) {
+//
+//}
 
 void Environment::parallelUpdateParticleDensities() {
 	for (int i = 0; i < THREAD_COUNT; i++) {
@@ -642,7 +648,7 @@ void Environment::parallelUpdateParticleDensities() {
 }
 void Environment::parallelUpdateParticles(double dt) {
 	for (int i = 0; i < THREAD_COUNT; i++) {
-		m_Threads.push_back(std::thread(&Environment::updateParticles, this, dt, i * m_Particles.size() / THREAD_COUNT, (i + 1) * m_Particles.size() / THREAD_COUNT));
+		m_Threads.push_back(std::thread(&Environment::calculateFutureVelocitiesAndCheckCollisions, this, dt, i * m_Particles.size() / THREAD_COUNT, (i + 1) * m_Particles.size() / THREAD_COUNT));
 	}
 
 	for (int i = 0; i < THREAD_COUNT; i++) {
@@ -654,18 +660,23 @@ void Environment::parallelUpdateParticles(double dt) {
 
 void Environment::update(float dt) {
 
-	std::chrono::steady_clock::time_point time1 = std::chrono::steady_clock::now();
+	// calculate predicted positions
+	for (auto& particle : m_Particles) {
+		particle->m_PredictedPosition = particle->getPosition() + particle->getVelocity() * dt * HOW_FAR_INTO_THE_FUTURE;
+	}
+
+	//std::chrono::steady_clock::time_point time1 = std::chrono::steady_clock::now();
 	updateInteractionMatrix();
 
-	std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();
-	double tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
+	//std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();
+	//double tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
 
-	time1 = std::chrono::steady_clock::now();
+	//time1 = std::chrono::steady_clock::now();
 
 	this->parallelUpdateParticleDensities();
 
-	time2 = std::chrono::steady_clock::now();
-	tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
+	//time2 = std::chrono::steady_clock::now();
+	//tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
 
 	/*time1 = std::chrono::steady_clock::now();
 
@@ -674,12 +685,87 @@ void Environment::update(float dt) {
 	time2 = std::chrono::steady_clock::now();
 	tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();*/
 
-	time1 = std::chrono::steady_clock::now();
+	//time1 = std::chrono::steady_clock::now();
 
 	this->parallelUpdateParticles(dt);
 
-	time2 = std::chrono::steady_clock::now();
-	tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
+	// apply future velocities to current velocities
+	for (auto& particle : m_Particles) {
+		particle->updateVelocity();
+		particle->update(dt);
+		particle->m_PredictedPosition = particle->getPosition();
+	}
+
+	updateInteractionMatrix();
+
+	for (auto& particle : m_Particles) {
+		for (auto& obstacle : m_Obstacles) {
+			if (check_line_segment_circle_intersection(obstacle.Point1, obstacle.Point2, particle->getPosition(), particleRadius)) {
+				/*Vector2D normalVector = Math::calculateNormalVector(Math::calculateSlope(obstacle.Point1, obstacle.Point2));
+				Vector2D reflectionVector = Math::calculateReflectionVector(particle->m_Velocity, normalVector);*/
+
+				// magnitude of reflection vector
+				//float magnitude = sqrt(reflectionVector.X * reflectionVector.X + reflectionVector.Y * reflectionVector.Y);
+
+				// normalize the reflection vector
+				/*reflectionVector.X /= magnitude;
+				reflectionVector.Y /= magnitude;*/
+
+				//particle->m_Velocity = reflectionVector * 0.1f;
+				particle->setVelocity(Vector2D());
+
+				/*particle.m_Velocity.Y = -particle.m_Velocity.Y;*/
+
+				particle->setPosition(particle->m_LastSafePosition);
+
+				break;
+			}
+		}
+
+		//for (auto& otherParticle : m_Particles) {
+		for (auto& otherParticle : getParticlesInCell(particle->getPosition())) {
+			if (particle->m_ID == otherParticle->m_ID) {
+				continue;
+			}
+			//if (squared_distance(particle->getPosition(), otherParticle->getPosition()) <= (particleRadius * particleRadius * 4)) {
+
+			//	Vector2D normalVector = Vector2D(otherParticle->getPosition().X - particle->getPosition().X, otherParticle->getPosition().Y - particle->getPosition().Y);
+
+			//	//magnitude of normal vector
+			//	float magnitude = sqrt(normalVector.X * normalVector.X + normalVector.Y * normalVector.Y);
+
+			//	// normalize the normal vector
+			//	normalVector.X /= magnitude;
+			//	normalVector.Y /= magnitude;
+
+			//	Vector2D reflectionVector = Math::calculateReflectionVector(particle->getVelocity(), normalVector);
+
+			//	particle->setVelocity(particle->getVelocity() + reflectionVector * 0.01f);
+
+
+			//	particle->setPosition(particle->m_LastSafePosition);
+			//}
+			if (squared_distance(particle->getPosition(), otherParticle->getPosition()) <= (particleRadius * particleRadius) * 4) {
+				Vector2D normalVector = Vector2D(otherParticle->getPosition().X - particle->getPosition().X, otherParticle->getPosition().Y - particle->getPosition().Y);
+
+				//magnitude of normal vector
+				float magnitude = -1 * sqrt(normalVector.X * normalVector.X + normalVector.Y * normalVector.Y);
+
+				// normalize the normal vector
+				normalVector.X /= magnitude;
+				normalVector.Y /= magnitude;
+
+				//float power = smoothing_kernel(particleRadiusOfRepel - particleRadius, sqrt(squared_distance(m_Particles.at(i).m_Position, m_Particles.at(j).m_Position)) - particleRadius * 2);
+
+				particle->setVelocity(particle->getVelocity() + normalVector * particleRepulsionForce);
+
+				otherParticle->setVelocity(particle->getVelocity() - normalVector * particleRepulsionForce);
+			}
+		}
+	}
+
+	//time2 = std::chrono::steady_clock::now();
+	//tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
 
 	/*time1 = std::chrono::steady_clock::now();
 
