@@ -51,8 +51,8 @@ void InteractionMatrixClass::updateInteractionMatrix(const std::vector<Particle*
 	}
 
 	for (int i = 0; i < particles.size(); i++) {
-		int x = particles.at(i)->m_Position.Y / particleRadiusOfRepel;
-		int y = particles.at(i)->m_Position.X / particleRadiusOfRepel;
+		int x = particles.at(i)->m_PredictedPosition.Y / particleRadiusOfRepel;
+		int y = particles.at(i)->m_PredictedPosition.X / particleRadiusOfRepel;
 		if (x < 0 || x >= m_InteractionsMatrix.size() || y < 0 || y >= m_InteractionsMatrix.at(0).size()) {
 			continue;
 		}
@@ -64,8 +64,8 @@ void InteractionMatrixClass::updateInteractionMatrix(const std::vector<Particle*
 	if (particles.size() < m_InteractionsMatrix.size() * m_InteractionsMatrix.at(0).size()) {
 
 		for (auto& particle : particles) {
-			int x = particle->m_Position.Y / particleRadiusOfRepel;
-			int y = particle->m_Position.X / particleRadiusOfRepel;
+			int x = particle->m_PredictedPosition.Y / particleRadiusOfRepel;
+			int y = particle->m_PredictedPosition.X / particleRadiusOfRepel;
 
 			if (m_InteractionsMatrix.at(x).at(y).particles.size() > 0) {
 				continue;
