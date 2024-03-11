@@ -7,11 +7,6 @@
 #include <vector>
 #include "thread"
 
-struct MatrixComponenets {
-	std::vector<Particle*> particles;
-	std::vector<Surface2D*> obstacles;
-};
-
 
 class Environment
 {
@@ -44,12 +39,6 @@ private:
 	Vector2D calculateViscosityForce(Particle* particle);
 
 	Vector2D calculatePressureForce(Particle* particle);
-	void addToInteractionMatrixCellSurroundingCells(int x, int y, std::vector<std::vector<MatrixComponenets>>& temporary);
-	void updateInteractionMatrix();
-	std::vector<Particle*> getParticlesInCell(Vector2D particlePosition);
-
 
 	std::vector<Surface2D> m_Obstacles;
-
-	std::vector<std::vector<MatrixComponenets>> m_InteractionsMatrix;
 };

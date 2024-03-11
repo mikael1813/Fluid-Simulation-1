@@ -1,95 +1,94 @@
 #include "Application.hpp"
 #include "Timer.hpp"
 
-#include <iostream>
+
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+	glViewport(0, 0, width, height);
+}
 
 Application::Application()
 {
-
-	m_is_running = true;
-
-
-	m_window = SDL_CreateWindow("SDL2 Window",
-		SDL_WINDOWPOS_CENTERED,
-		SDL_WINDOWPOS_CENTERED,
-		1280, 720,
-		SDL_WINDOW_RESIZABLE);
-
-	if (!m_window)
-	{
-		std::cout << "Failed to create window\n";
-		std::cout << "SDL2 Error: " << SDL_GetError() << "\n";
+	// Initialize GLFW
+	if (!glfwInit()) {
+		std::cerr << "Failed to initialize GLFW" << std::endl;
 		return;
 	}
 
-	/*m_window_surface = SDL_GetWindowSurface(m_window);
-
-	if (!m_window_surface)
-	{
-		std::cout << "Failed to get window's surface\n";
-		std::cout << "SDL2 Error: " << SDL_GetError() << "\n";
-		return;
-	}*/
-
-	m_renderer = SDL_CreateRenderer(
-		m_window,
-		-1,
-		SDL_RENDERER_ACCELERATED |
-		SDL_RENDERER_PRESENTVSYNC);
-	if (m_renderer == nullptr) {
-		SDL_Log("Failed to create Renderer: %s", SDL_GetError());
+	// Create a windowed mode window and its OpenGL context
+	m_window = glfwCreateWindow(1280, 720, "Circle Example", NULL, NULL);
+	if (!m_window) {
+		std::cerr << "Failed to create GLFW window" << std::endl;
+		glfwTerminate();
 		return;
 	}
+
+	// Set framebuffer size callback
+	glfwSetFramebufferSizeCallback(m_window, framebuffer_size_callback);
+
+	// Make the window's context current
+	glfwMakeContextCurrent(m_window);
+
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
 
 	m_environment = new Environment();
 }
 
 Application::~Application()
 {
-	SDL_FreeSurface(m_window_surface);
-	SDL_DestroyWindow(m_window);
-
+	glfwTerminate();
+	delete m_environment;
 }
 
 void Application::events() {
 
-	while (SDL_PollEvent(&m_window_event) > 0)
-	{
-		switch (m_window_event.type)
-		{
-		case SDL_QUIT:
-			m_is_running = false;
-			break;
-		case SDL_MOUSEBUTTONDOWN:
-			mousePress(m_window_event.button);
-			break;
-		case SDL_MOUSEBUTTONUP:
-			if (m_window_event.button.button == SDL_BUTTON_LEFT) {
-				//this->chessWindow->releaseLeftClick();
-			}
-			break;
-		}
-		switch (m_window_event.window.event) {
-		case SDL_WINDOWEVENT_SIZE_CHANGED:
-			m_window_surface = SDL_GetWindowSurface(m_window);
-			break;
-		}
-
-	}
+	// Poll for and process events
+	glfwPollEvents();
 }
 
 void Application::loop()
 {
-	while (m_is_running) {
-		events();
+	float time_passed = 0.0f;
+	int frames = 0;
+	std::chrono::steady_clock::time_point lastTime = std::chrono::steady_clock::now();
+	// Loop until the user closes the window
+	while (!glfwWindowShouldClose(m_window)) {
 
-		double deltaTime = Timer::GetInstance()->GetTime();
+		double deltaTime = Timer::getInstance()->getTime();
+
 
 		//std::cout << deltaTime << std::endl;
 
-		update(deltaTime);
+		//std::chrono::steady_clock::time_point time1 = std::chrono::steady_clock::now();
 
-		render();
+		this->update(deltaTime);
+
+		//std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();
+		//double tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
+
+		//time1 = std::chrono::steady_clock::now();
+
+		// Render here
+		this->render();
+
+		//time2 = std::chrono::steady_clock::now();
+		//tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
+
+		this->events();
+
+		std::chrono::steady_clock::time_point time = std::chrono::steady_clock::now();
+		double tick = std::chrono::duration_cast<std::chrono::microseconds>(time - lastTime).count() / 1000000.0f;
+		lastTime = time;
+
+		time_passed += tick;
+		frames++;
+
+		if (time_passed >= 1.0f) {
+			std::cout << "FPS: " << frames << " " << std::endl;
+			time_passed = 0.0f;
+			frames = 0;
+		}
 	}
 }
 
@@ -106,19 +105,29 @@ void Application::mousePress(SDL_MouseButtonEvent& b) {
 
 void Application::render()
 {
-	/*SDL_UpdateWindowSurface(m_window);
-	SDL_FillRect(m_window_surface, NULL, SDL_MapRGB(m_window_surface->format, 0, 0, 0));*/
-	SDL_RenderClear(m_renderer);
+	// Render here
+	glClear(GL_COLOR_BUFFER_BIT);
 
-	SDL_SetRenderDrawColor(m_renderer, 255, 255, 255, 255);
-	//SDL_RenderClear(m_renderer);
+	// Get the size of the window
+	glfwGetFramebufferSize(m_window, &m_width, &m_height);
 
-	//m_environment->render(m_renderer);
+	// Set up the viewport to maintain aspect ratio
+	glViewport(0, 0, m_width, m_height);
 
-	SDL_SetRenderDrawColor(m_renderer, 0, 0, 0, 255);
+	// Calculate the aspect ratio
+	float aspectRatio = static_cast<float>(m_width) / static_cast<float>(m_height);
 
-	SDL_RenderPresent(m_renderer);
-	//this->chessWindow->draw(m_window_surface);
+	// Apply aspect ratio to your projection matrix or adjust accordingly
+	// For example:
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(-aspectRatio, aspectRatio, -1.0f, 1.0f, -1.0f, 1.0f);
+
+	// Render environment
+	m_environment->render(m_width, m_height);
+
+	// Swap front and back buffers
+	glfwSwapBuffers(m_window);
 }
 
 void Application::update(float dt)
