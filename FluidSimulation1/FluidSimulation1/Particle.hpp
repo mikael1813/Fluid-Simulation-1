@@ -35,8 +35,7 @@ public:
 
 		m_TemporaryVelocity = Vector2D();
 
-		m_Position.X += m_Velocity.X * dt;
-		m_Position.Y += m_Velocity.Y * dt;
+		m_Position += m_Velocity * dt;
 
 		//m_Velocity = m_Velocity * 0.95f;
 	}

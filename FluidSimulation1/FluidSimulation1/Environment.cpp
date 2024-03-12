@@ -18,19 +18,19 @@
 #include <map>
 
 
-constexpr auto particleCount = 4000;
+constexpr auto particleCount = 5000;
 
 constexpr auto particleRadius = 2;
 constexpr auto particleRadiusOfRepel = 50;
 constexpr auto particleDistance = 30;
 
-constexpr auto particleRepulsionForce = 100.0f;
+constexpr auto particleRepulsionForce = 10.0f;
 
 constexpr int SCREEN_WIDTH = 1280;
 constexpr int SCREEN_HEIGHT = 720;
 
 //constexpr float viscosityStrength = 0.0f;
-constexpr float viscosityStrength = 0.1f;
+constexpr float viscosityStrength = 0.5f;
 
 constexpr float HOW_FAR_INTO_THE_FUTURE = 10.0f;
 
@@ -295,9 +295,6 @@ void Environment::updateParticleDensities(int start, int end) {
 
 		Particle* particle = m_Particles.at(i);
 
-		/*Vector2D futurePosition = particle->m_Position + particle->m_Velocity * dt;
-		particle->m_Density = calculateDensity(futurePosition);*/
-
 		particle->m_Density = calculateDensity(particle->m_PredictedPosition);
 
 	}
@@ -320,76 +317,11 @@ void Environment::calculateFutureVelocities(double dt, int start, int end) {
 	}
 }
 
-//void Environment::checkCollisions(double dt, int start, int end) {
-//
-//}
+void Environment::checkCollisions(int start, int end) {
+	for (int i = start; i < end; i++) {
 
-void Environment::parallelUpdateParticleDensities() {
-	for (int i = 0; i < THREAD_COUNT; i++) {
-		m_Threads.push_back(std::thread(&Environment::updateParticleDensities, this, i * m_Particles.size() / THREAD_COUNT, (i + 1) * m_Particles.size() / THREAD_COUNT));
-	}
+		Particle* particle = m_Particles.at(i);
 
-	for (int i = 0; i < THREAD_COUNT; i++) {
-		m_Threads.at(i).join();
-	}
-
-	m_Threads.clear();
-}
-void Environment::parallelUpdateParticles(double dt) {
-	for (int i = 0; i < THREAD_COUNT; i++) {
-		m_Threads.push_back(std::thread(&Environment::calculateFutureVelocities, this, dt, i * m_Particles.size() / THREAD_COUNT, (i + 1) * m_Particles.size() / THREAD_COUNT));
-	}
-
-	for (int i = 0; i < THREAD_COUNT; i++) {
-		m_Threads.at(i).join();
-	}
-
-	m_Threads.clear();
-}
-
-void Environment::update(float dt) {
-	// calculate predicted positions
-	for (auto& particle : m_Particles) {
-		particle->m_PredictedPosition = particle->getPosition() + particle->getVelocity() * dt * HOW_FAR_INTO_THE_FUTURE;
-	}
-
-	//std::chrono::steady_clock::time_point time1 = std::chrono::steady_clock::now();
-	InteractionMatrixClass::getInstance()->updateInteractionMatrix(m_Particles, particleRadiusOfRepel);
-
-
-	//std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();
-	//double tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
-
-	//time1 = std::chrono::steady_clock::now();
-
-	this->parallelUpdateParticleDensities();
-
-	//time2 = std::chrono::steady_clock::now();
-	//tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
-
-	/*time1 = std::chrono::steady_clock::now();
-
-	this->updateParticleDensities(0, m_Particles.size());
-
-	time2 = std::chrono::steady_clock::now();
-	tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();*/
-
-	//time1 = std::chrono::steady_clock::now();
-
-	this->parallelUpdateParticles(dt);
-
-	// apply future velocities to current velocities
-	for (auto& particle : m_Particles) {
-		particle->updateVelocity();
-		particle->update(dt);
-		particle->m_PredictedPosition = particle->getPosition();
-	}
-
-	InteractionMatrixClass::getInstance()->updateInteractionMatrix(m_Particles, particleRadiusOfRepel);
-
-	std::map<std::tuple<int, int>, bool> particlesInCollision{};
-
-	for (auto& particle : m_Particles) {
 		for (auto& obstacle : m_Obstacles) {
 			if (Math::check_line_segment_circle_intersection(obstacle.Point1, obstacle.Point2, particle->getPosition(), particleRadius)) {
 				/*Vector2D normalVector = Math::calculateNormalVector(Math::calculateSlope(obstacle.Point1, obstacle.Point2));
@@ -438,19 +370,6 @@ void Environment::update(float dt) {
 			//}
 			if (Math::squared_distance(particle->getPosition(), otherParticle->getPosition()) <= (particleRadius * particleRadius) * 4) {
 
-				std::tuple<int, int> key{ particle->m_ID, otherParticle->m_ID };
-
-				if (particle->m_ID > otherParticle->m_ID) {
-					key = { otherParticle->m_ID, particle->m_ID };
-				}
-
-				if (particlesInCollision.find(key) == particlesInCollision.end()) {
-					particlesInCollision[key] = true;
-				}
-				else {
-					continue;
-				}
-
 				/*Vector2D positionDifference = particle->getPosition() - otherParticle->getPosition();
 
 				Vector2D velocityDifference = particle->getVelocity() - otherParticle->getVelocity();
@@ -488,6 +407,85 @@ void Environment::update(float dt) {
 			}
 		}
 	}
+}
+
+void Environment::parallelUpdateParticleDensities() {
+	for (int i = 0; i < THREAD_COUNT; i++) {
+		m_Threads.push_back(std::thread(&Environment::updateParticleDensities, this, i * m_Particles.size() / THREAD_COUNT, (i + 1) * m_Particles.size() / THREAD_COUNT));
+	}
+
+	for (int i = 0; i < THREAD_COUNT; i++) {
+		m_Threads.at(i).join();
+	}
+
+	m_Threads.clear();
+}
+void Environment::parallelCalculateFutureVelocities(double dt) {
+	for (int i = 0; i < THREAD_COUNT; i++) {
+		m_Threads.push_back(std::thread(&Environment::calculateFutureVelocities, this, dt, i * m_Particles.size() / THREAD_COUNT, (i + 1) * m_Particles.size() / THREAD_COUNT));
+	}
+
+	for (int i = 0; i < THREAD_COUNT; i++) {
+		m_Threads.at(i).join();
+	}
+
+	m_Threads.clear();
+}
+
+void Environment::parallelCheckCollisions() {
+	for (int i = 0; i < THREAD_COUNT; i++) {
+		m_Threads.push_back(std::thread(&Environment::checkCollisions, this, i * m_Particles.size() / THREAD_COUNT, (i + 1) * m_Particles.size() / THREAD_COUNT));
+	}
+
+	for (int i = 0; i < THREAD_COUNT; i++) {
+		m_Threads.at(i).join();
+	}
+
+	m_Threads.clear();
+}
+
+void Environment::update(float dt) {
+	// calculate predicted positions
+	for (auto& particle : m_Particles) {
+		particle->m_PredictedPosition = particle->getPosition() + particle->getVelocity() * dt * HOW_FAR_INTO_THE_FUTURE;
+	}
+
+	//std::chrono::steady_clock::time_point time1 = std::chrono::steady_clock::now();
+	InteractionMatrixClass::getInstance()->updateInteractionMatrix(m_Particles, particleRadiusOfRepel);
+
+
+	//std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();
+	//double tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
+
+	//time1 = std::chrono::steady_clock::now();
+
+	this->parallelUpdateParticleDensities();
+
+	//time2 = std::chrono::steady_clock::now();
+	//tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
+
+	/*time1 = std::chrono::steady_clock::now();
+
+	this->updateParticleDensities(0, m_Particles.size());
+
+	time2 = std::chrono::steady_clock::now();
+	tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();*/
+
+	//time1 = std::chrono::steady_clock::now();
+
+	this->parallelCalculateFutureVelocities(dt);
+
+	// apply future velocities to current velocities
+	for (auto& particle : m_Particles) {
+		particle->updateVelocity();
+		particle->update(dt);
+		particle->m_PredictedPosition = particle->getPosition();
+	}
+
+	InteractionMatrixClass::getInstance()->updateInteractionMatrix(m_Particles, particleRadiusOfRepel);
+
+	//this->checkCollisions(0, m_Particles.size());
+	this->parallelCheckCollisions();
 
 }
 

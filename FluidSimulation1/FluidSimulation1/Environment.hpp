@@ -30,11 +30,15 @@ private:
 
 	void renderParticles(int width, int height);
 
+	void checkCollisions(int start, int end);
+
 	void updateParticleDensities(int start, int end);
 	void calculateFutureVelocities(double dt, int start, int end);
 
+	void parallelCheckCollisions();
+
 	void parallelUpdateParticleDensities();
-	void parallelUpdateParticles(double dt);
+	void parallelCalculateFutureVelocities(double dt);
 
 	Vector2D calculateViscosityForce(Particle* particle);
 
