@@ -15,8 +15,12 @@ struct Vector2D {
 	}
 
 	// Function to calculate the magnitude of a 2D vector (x, y)
-	float magnitude() {
+	float getMagnitude() const {
 		return std::sqrt(X * X + Y * Y);
+	}
+
+	float getMagnitudeSquared() const {
+		return X * X + Y * Y;
 	}
 
 	static Vector2D getRandomDirection();
@@ -29,6 +33,11 @@ struct Vector2D {
 	// multiply by a scalar
 	Vector2D operator*(float scalar) const {
 		return Vector2D(X * scalar, Y * scalar);
+	}
+
+	// dot product
+	float operator*(const Vector2D& other) const {
+		return X * other.X + Y * other.Y;
 	}
 
 	// add 1 vector to current vector

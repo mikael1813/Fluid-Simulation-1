@@ -15,15 +15,16 @@
 #include <chrono>
 
 #include <mutex> 
+#include <map>
 
 
-constexpr auto particleCount = 5000;
+constexpr auto particleCount = 4000;
 
 constexpr auto particleRadius = 2;
 constexpr auto particleRadiusOfRepel = 50;
 constexpr auto particleDistance = 30;
 
-constexpr auto particleRepulsionForce = 1.0f;
+constexpr auto particleRepulsionForce = 100.0f;
 
 constexpr int SCREEN_WIDTH = 1280;
 constexpr int SCREEN_HEIGHT = 720;
@@ -65,7 +66,7 @@ Environment::Environment() {
 			posY = std::uniform_int_distribution<int>(100, SCREEN_HEIGHT - 100)(gen);
 
 			for (auto& particle : m_Particles) {
-				if (particle->getPosition().X == posX && particle->getPosition().Y == posY) {
+				if (Math::squared_distance(particle->getPosition(), Vector2D(posX, posY)) <= particleRadius) {
 					ok = false;
 					break;
 				}
@@ -108,7 +109,7 @@ void Environment::renderParticles(int width, int height) {
 
 		float blue, green, red;
 
-		Graphics::velocityToColor(particle->getVelocity().magnitude(), red, green, blue);
+		Graphics::velocityToColor(particle->getVelocity().getMagnitude(), red, green, blue);
 
 		glColor4f(red, green, blue, 1.0f);
 		Graphics::DrawCircle(width, height, particle->getPosition().X, particle->getPosition().Y, particleRadius * 2, 20);
@@ -386,6 +387,8 @@ void Environment::update(float dt) {
 
 	InteractionMatrixClass::getInstance()->updateInteractionMatrix(m_Particles, particleRadiusOfRepel);
 
+	std::map<std::tuple<int, int>, bool> particlesInCollision{};
+
 	for (auto& particle : m_Particles) {
 		for (auto& obstacle : m_Obstacles) {
 			if (Math::check_line_segment_circle_intersection(obstacle.Point1, obstacle.Point2, particle->getPosition(), particleRadius)) {
@@ -434,16 +437,50 @@ void Environment::update(float dt) {
 			//	particle->setPosition(particle->m_LastSafePosition);
 			//}
 			if (Math::squared_distance(particle->getPosition(), otherParticle->getPosition()) <= (particleRadius * particleRadius) * 4) {
+
+				std::tuple<int, int> key{ particle->m_ID, otherParticle->m_ID };
+
+				if (particle->m_ID > otherParticle->m_ID) {
+					key = { otherParticle->m_ID, particle->m_ID };
+				}
+
+				if (particlesInCollision.find(key) == particlesInCollision.end()) {
+					particlesInCollision[key] = true;
+				}
+				else {
+					continue;
+				}
+
+				/*Vector2D positionDifference = particle->getPosition() - otherParticle->getPosition();
+
+				Vector2D velocityDifference = particle->getVelocity() - otherParticle->getVelocity();
+
+				Vector2D v1 = particle->getVelocity() - ((velocityDifference * positionDifference) / positionDifference.getMagnitudeSquared()) * positionDifference;
+
+				Vector2D v2 = otherParticle->getVelocity() - (((-velocityDifference) * (-positionDifference)) / (-positionDifference).getMagnitudeSquared()) * (-positionDifference);
+
+				particle->setVelocity(v1);
+
+				otherParticle->setVelocity(v2);*/
+
+				/*particle->setPosition(particle->m_LastSafePosition);
+				otherParticle->setPosition(otherParticle->m_LastSafePosition);*/
+
 				Vector2D normalVector = Vector2D(otherParticle->getPosition().X - particle->getPosition().X, otherParticle->getPosition().Y - particle->getPosition().Y);
 
 				//magnitude of normal vector
 				float magnitude = -1 * sqrt(normalVector.X * normalVector.X + normalVector.Y * normalVector.Y);
 
 				// normalize the normal vector
-				normalVector.X /= magnitude;
-				normalVector.Y /= magnitude;
+				/*normalVector.X /= magnitude;
+				normalVector.Y /= magnitude;*/
+
 
 				//float power = smoothing_kernel(particleRadiusOfRepel - particleRadius, sqrt(squared_distance(m_Particles.at(i).m_Position, m_Particles.at(j).m_Position)) - particleRadius * 2);
+
+				particle->m_TemporaryVelocity = -normalVector * particleRepulsionForce;
+
+				otherParticle->m_TemporaryVelocity = normalVector * particleRepulsionForce;
 
 				/*particle->setVelocity(particle->getVelocity() + normalVector * particleRepulsionForce);
 

@@ -9,10 +9,14 @@ constexpr float GRAVITY = 10.0f;
 
 class Particle {
 public:
-	Particle(float x, float y, int id) : m_Position(Vector2D(x, y)), m_ID(id) {}
+	Particle(float x, float y, int id) : m_Position(Vector2D(x, y)), m_ID(id), m_TemporaryVelocity(Vector2D()) {}
 	Vector2D m_PredictedPosition;
 	Vector2D m_LastSafePosition;
 	Vector2D m_FutureVelocity;
+
+	Vector2D m_TemporaryVelocity;
+
+
 	float m_Density = 0.0f;
 	int m_ID;
 
@@ -26,6 +30,10 @@ public:
 		Vector2D gravity(0.0f, GRAVITY);
 
 		m_Velocity += gravity * dt;
+
+		m_Velocity += m_TemporaryVelocity * dt;
+
+		m_TemporaryVelocity = Vector2D();
 
 		m_Position.X += m_Velocity.X * dt;
 		m_Position.Y += m_Velocity.Y * dt;
