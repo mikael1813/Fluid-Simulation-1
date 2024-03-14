@@ -10,7 +10,7 @@ public:
 
 	Pipe(Vector2D position) : m_Position(position) {
 		m_InteractionRadius = 50.0f;
-		m_Pressure = 20.0f;
+		m_Pressure = 0.0f;
 	}
 
 	Vector2D getPosition() {
