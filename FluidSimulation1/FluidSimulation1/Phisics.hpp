@@ -1,5 +1,9 @@
 #pragma once
 
+namespace constants {
+	constexpr double m_PI = 3.14159265358979323846f;
+}
+
 #include <cmath> // Include <cmath> for handling infinity
 
 struct Vector2D {

@@ -3,6 +3,7 @@
 #include "Phisics.hpp"
 
 #include <iostream>
+#include <vector>
 
 constexpr float GRAVITY = 10.0f;
 
@@ -30,6 +31,12 @@ public:
 		Vector2D gravity(0.0f, GRAVITY);
 
 		m_Velocity += gravity * dt;
+
+		for (auto& force : m_Forces) {
+			m_Velocity += force * dt;
+		}
+
+		m_Forces.clear();
 
 		m_Velocity += m_TemporaryVelocity * dt;
 
@@ -60,10 +67,16 @@ public:
 		m_Position = position;
 	}
 
+	void addForce(Vector2D force) {
+		m_TemporaryVelocity += force / mass;
+	}
+
 private:
 
 	Vector2D m_Position;
 	Vector2D m_Velocity;
+
+	std::vector<Vector2D> m_Forces;
 
 	float visible_radius = 2.0f;
 	float mass = 1.0f;

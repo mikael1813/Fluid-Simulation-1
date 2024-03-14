@@ -18,6 +18,7 @@ void InteractionMatrixClass::initializeMatrix(int width, int height, int particl
 }
 
 void InteractionMatrixClass::addToInteractionMatrixCellSurroundingCells(int x, int y, std::vector<std::vector<MatrixComponenets>>& temporary) {
+
 	if (x < 0 || x >= m_InteractionsMatrix.size() || y < 0 || y >= m_InteractionsMatrix.at(0).size()) {
 		return;
 	}
@@ -67,7 +68,7 @@ void InteractionMatrixClass::updateInteractionMatrix(const std::vector<Particle*
 			int x = particle->m_PredictedPosition.Y / particleRadiusOfRepel;
 			int y = particle->m_PredictedPosition.X / particleRadiusOfRepel;
 
-			if (m_InteractionsMatrix.at(x).at(y).particles.size() > 0) {
+			if (x < 0 || x >= m_InteractionsMatrix.size() || y < 0 || y >= m_InteractionsMatrix.at(0).size() || m_InteractionsMatrix.at(x).at(y).particles.size() > 0) {
 				continue;
 			}
 

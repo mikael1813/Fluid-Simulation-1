@@ -11,14 +11,13 @@
 #include <omp.h>
 #include <random>
 
-
 #include <chrono>
 
 #include <mutex> 
 #include <map>
 
 
-constexpr auto particleCount = 5000;
+constexpr auto particleCount = 100;
 
 constexpr auto particleRadius = 2;
 constexpr auto particleRadiusOfRepel = 50;
@@ -30,7 +29,7 @@ constexpr int SCREEN_WIDTH = 1280;
 constexpr int SCREEN_HEIGHT = 720;
 
 //constexpr float viscosityStrength = 0.0f;
-constexpr float viscosityStrength = 0.5f;
+constexpr float viscosityStrength = 0.1f;
 
 constexpr float HOW_FAR_INTO_THE_FUTURE = 10.0f;
 
@@ -84,6 +83,8 @@ Environment::Environment() {
 	m_Obstacles.push_back(Surface2D(50, 699, 1200, 700));
 	m_Obstacles.push_back(Surface2D(1200, 10, 1200, 700));
 
+	m_Pipes.push_back(Pipe(Vector2D(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)));
+
 	/*m_Obstacles.push_back(Surface2D(500, 400, 600, 300));
 	m_Obstacles.push_back(Surface2D(600, 300, 700, 400));
 	m_Obstacles.push_back(Surface2D(700, 400, 500, 400));*/
@@ -128,6 +129,11 @@ void Environment::render(int width, int height)
 			maxDensity = particle->m_Density;
 		}
 	}*/
+
+	for (auto& pipe : m_Pipes) {
+		glColor4f(1.0, 1.0, 1.0, 0.5);
+		Graphics::DrawCircle(width, height, pipe.getPosition().X, pipe.getPosition().Y, pipe.getInteractionRadius(), 20);
+	}
 
 	this->renderParticles(width, height);
 
@@ -302,8 +308,11 @@ void Environment::updateParticleDensities(int start, int end) {
 
 void Environment::calculateFutureVelocities(double dt, int start, int end) {
 	for (int i = start; i < end; i++) {
-
 		Particle* particle = m_Particles.at(i);
+
+		if (particle->m_Density == 0) {
+			continue;
+		}
 
 		Vector2D pressureForce = calculatePressureForce(particle);
 		Vector2D pressureAcceleration = pressureForce / particle->m_Density;
@@ -445,14 +454,26 @@ void Environment::parallelCheckCollisions() {
 }
 
 void Environment::update(float dt) {
+
+	//std::cout<<"A"<<std::endl;
+
+	for (auto& pipe : m_Pipes) {
+		pipe.update(dt, m_Particles, InteractionMatrixClass::getInstance()->getParticlesInCell(pipe.getPosition(), particleRadiusOfRepel), particleRadius * 2);
+	}
+
+	//std::cout<<"B"<<std::endl;
+
 	// calculate predicted positions
 	for (auto& particle : m_Particles) {
 		particle->m_PredictedPosition = particle->getPosition() + particle->getVelocity() * dt * HOW_FAR_INTO_THE_FUTURE;
 	}
 
+	//std::cout<<"C"<<std::endl;
+
 	//std::chrono::steady_clock::time_point time1 = std::chrono::steady_clock::now();
 	InteractionMatrixClass::getInstance()->updateInteractionMatrix(m_Particles, particleRadiusOfRepel);
 
+	//std::cout<<"D"<<std::endl;
 
 	//std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();
 	//double tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
@@ -460,6 +481,8 @@ void Environment::update(float dt) {
 	//time1 = std::chrono::steady_clock::now();
 
 	this->parallelUpdateParticleDensities();
+
+	//std::cout<<"E"<<std::endl;
 
 	//time2 = std::chrono::steady_clock::now();
 	//tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
@@ -475,6 +498,8 @@ void Environment::update(float dt) {
 
 	this->parallelCalculateFutureVelocities(dt);
 
+	//std::cout<<"F"<<std::endl;
+
 	// apply future velocities to current velocities
 	for (auto& particle : m_Particles) {
 		particle->updateVelocity();
@@ -482,10 +507,16 @@ void Environment::update(float dt) {
 		particle->m_PredictedPosition = particle->getPosition();
 	}
 
+	//std::cout<<"G"<<std::endl;
+
 	InteractionMatrixClass::getInstance()->updateInteractionMatrix(m_Particles, particleRadiusOfRepel);
+
+	//std::cout<<"H"<<std::endl;
 
 	//this->checkCollisions(0, m_Particles.size());
 	this->parallelCheckCollisions();
+
+	//std::cout<<"I"<<std::endl;
 
 }
 

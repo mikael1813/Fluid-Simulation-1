@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Particle.hpp"
+#include "Pipe.hpp"
 
 #include "SDL.h"
 
@@ -22,6 +23,8 @@ private:
 	std::vector<Particle*> m_Particles;
 	std::vector<float> m_ParticleProperties;
 	std::vector<float> m_ParticleDensities;
+
+	std::vector<Pipe> m_Pipes;
 
 	std::vector<std::thread> m_Threads;
 

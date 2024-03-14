@@ -139,6 +139,7 @@
     <ClCompile Include="InteractionMatrixClass.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Phisics.cpp" />
+    <ClCompile Include="Pipe.cpp" />
     <ClCompile Include="Timer.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -148,6 +149,7 @@
     <ClInclude Include="InteractionMatrixClass.hpp" />
     <ClInclude Include="Particle.hpp" />
     <ClInclude Include="Phisics.hpp" />
+    <ClInclude Include="Pipe.hpp" />
     <ClInclude Include="Timer.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

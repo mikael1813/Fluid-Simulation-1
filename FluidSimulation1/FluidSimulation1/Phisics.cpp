@@ -1,8 +1,6 @@
 #include "Phisics.hpp"
 #include <random>
 
-constexpr double M_PI = 3.14159265358979323846f;
-
 Vector2D Vector2D::getRandomDirection() {
 
 	// Seed the random number generator
@@ -10,7 +8,7 @@ Vector2D Vector2D::getRandomDirection() {
 	std::mt19937 gen(rd());
 
 	// Create a uniform distribution for the angle (in radians)
-	std::uniform_real_distribution<float> dist(0, 2 * M_PI); // Range: [0, 2 * pi]
+	std::uniform_real_distribution<float> dist(0, 2 * constants::m_PI); // Range: [0, 2 * pi]
 
 	// Generate a random angle
 	float angle = dist(gen);
