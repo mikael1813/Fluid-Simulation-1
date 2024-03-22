@@ -70,10 +70,9 @@ void GeneratorPipe::update(float dt, std::vector<Particle*>& particles, std::vec
 
 void ConsumerPipe::update(float dt, std::vector<Particle*>& particles, std::vector<Particle*> surroundingParticles, float particleSize)
 {
-	std::vector<int> particlesToRemove;
+	std::vector<Particle*> particlesToRemove;
 
-	for (int i = 0; i < surroundingParticles.size(); i++) {
-		Particle* particle = surroundingParticles.at(i);
+	for (auto& particle : particles) {
 		Vector2D direction = particle->getPosition() - m_Position;
 
 		if (direction.getMagnitude() == 0) {
@@ -82,16 +81,29 @@ void ConsumerPipe::update(float dt, std::vector<Particle*>& particles, std::vect
 
 		float distance = direction.getMagnitude();
 		if (distance <= m_InteractionRadius) {
-			particlesToRemove.push_back(i);
+			particlesToRemove.push_back(particle);
 		}
 	}
 
-	int particleRemoved = 0;
+	std::vector<int> particlesToRemoveIndex;
 
-	for (auto& index : particlesToRemove) {
-		delete particles.at(index - particleRemoved);
-		particles.erase(particles.begin() + index - particleRemoved);
-		particleRemoved++;
+	for (auto& particle : particlesToRemove) {
+		for (int i = 0; i < particles.size(); i++) {
+			if (particle == particles.at(i)) {
+				particlesToRemoveIndex.push_back(i);
+				break;
+			}
+		}
+	}
+
+	std::sort(particlesToRemoveIndex.begin(), particlesToRemoveIndex.end());
+
+	int particlesRemoved = 0;
+
+	for (auto& index : particlesToRemoveIndex) {
+		delete particles.at(index - particlesRemoved);
+		particles.erase(particles.begin() + index - particlesRemoved);
+		particlesRemoved++;
 	}
 
 }

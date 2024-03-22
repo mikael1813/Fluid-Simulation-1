@@ -137,7 +137,7 @@ void Environment::render(int width, int height)
 		}
 	}*/
 
-	/*for (auto& pipe : m_Pipes) {
+	for (auto& pipe : m_Pipes) {
 		glColor4f(1.0, 1.0, 1.0, 0.5);
 		Graphics::DrawCircle(width, height, pipe->getPosition().X, pipe->getPosition().Y, pipe->getInteractionRadius(), 20);
 	}
@@ -147,7 +147,7 @@ void Environment::render(int width, int height)
 	for (auto& obstacle : m_Obstacles) {
 		glColor3f(1.0, 1.0, 1.0);
 		Graphics::DrawLine(width, height, obstacle.Point1, obstacle.Point2);
-	}*/
+	}
 }
 
 //float smoothing_kernel(float radius, float distance) {
@@ -463,13 +463,6 @@ void Environment::parallelCheckCollisions() {
 void Environment::update(float dt) {
 
 	//std::cout<<"A"<<std::endl;
-	std::cout << "a" << std::endl;
-
-	for (auto& pipe : m_Pipes) {
-		pipe->update(dt, m_Particles, InteractionMatrixClass::getInstance()->getParticlesInCell(pipe->getPosition(), particleRadiusOfRepel), particleRadius * 2);
-	}
-
-	std::cout << "b" << std::endl;
 
 	//std::cout<<"B"<<std::endl;
 
@@ -482,6 +475,14 @@ void Environment::update(float dt) {
 
 	//std::chrono::steady_clock::time_point time1 = std::chrono::steady_clock::now();
 	InteractionMatrixClass::getInstance()->updateInteractionMatrix(m_Particles, particleRadiusOfRepel);
+
+	std::cout << "a" << std::endl;
+
+	for (auto& pipe : m_Pipes) {
+		pipe->update(dt, m_Particles, InteractionMatrixClass::getInstance()->getParticlesInCell(pipe->getPosition(), particleRadiusOfRepel), particleRadius * 2);
+	}
+
+	std::cout << "b" << std::endl;
 
 	//std::cout<<"D"<<std::endl;
 
