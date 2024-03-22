@@ -3,8 +3,13 @@
 #include <list>
 #include "Phisics.hpp"
 
-void Pipe::update(float dt, std::vector<Particle*>& particles, std::vector<Particle*> surroundingParticles, float particleSize) {
+//void Pipe::update(float dt, std::vector<Particle*>& particles, std::vector<Particle*> surroundingParticles, float particleSize) {
 
+
+//}
+
+void GeneratorPipe::update(float dt, std::vector<Particle*>& particles, std::vector<Particle*> surroundingParticles, float particleSize)
+{
 	std::vector<Particle*> particlesToAdd;
 
 	// Seed the random number generator
@@ -61,4 +66,32 @@ void Pipe::update(float dt, std::vector<Particle*>& particles, std::vector<Parti
 	for (auto& particle : particlesToAdd) {
 		particles.push_back(particle);
 	}
+}
+
+void ConsumerPipe::update(float dt, std::vector<Particle*>& particles, std::vector<Particle*> surroundingParticles, float particleSize)
+{
+	std::vector<int> particlesToRemove;
+
+	for (int i = 0; i < surroundingParticles.size(); i++) {
+		Particle* particle = surroundingParticles.at(i);
+		Vector2D direction = particle->getPosition() - m_Position;
+
+		if (direction.getMagnitude() == 0) {
+			direction = Vector2D::getRandomDirection();
+		}
+
+		float distance = direction.getMagnitude();
+		if (distance <= m_InteractionRadius) {
+			particlesToRemove.push_back(i);
+		}
+	}
+
+	int particleRemoved = 0;
+
+	for (auto& index : particlesToRemove) {
+		delete particles.at(index - particleRemoved);
+		particles.erase(particles.begin() + index - particleRemoved);
+		particleRemoved++;
+	}
+
 }

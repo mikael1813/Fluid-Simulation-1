@@ -83,7 +83,8 @@ Environment::Environment() {
 	m_Obstacles.push_back(Surface2D(50, 699, 1200, 700));
 	m_Obstacles.push_back(Surface2D(1200, 10, 1200, 700));
 
-	m_Pipes.push_back(Pipe(Vector2D(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)));
+	//m_Pipes.push_back(new GeneratorPipe(Vector2D(SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2)));
+	m_Pipes.push_back(new ConsumerPipe(Vector2D(3 * SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2)));
 
 	/*m_Obstacles.push_back(Surface2D(500, 400, 600, 300));
 	m_Obstacles.push_back(Surface2D(600, 300, 700, 400));
@@ -92,10 +93,16 @@ Environment::Environment() {
 
 }
 
+#include<windows.h>
+
 Environment::~Environment()
 {
 	for (auto& particle : m_Particles) {
 		delete particle;
+	}
+
+	for (auto& pipe : m_Pipes) {
+		delete pipe;
 	}
 }
 
@@ -130,9 +137,9 @@ void Environment::render(int width, int height)
 		}
 	}*/
 
-	for (auto& pipe : m_Pipes) {
+	/*for (auto& pipe : m_Pipes) {
 		glColor4f(1.0, 1.0, 1.0, 0.5);
-		Graphics::DrawCircle(width, height, pipe.getPosition().X, pipe.getPosition().Y, pipe.getInteractionRadius(), 20);
+		Graphics::DrawCircle(width, height, pipe->getPosition().X, pipe->getPosition().Y, pipe->getInteractionRadius(), 20);
 	}
 
 	this->renderParticles(width, height);
@@ -140,7 +147,7 @@ void Environment::render(int width, int height)
 	for (auto& obstacle : m_Obstacles) {
 		glColor3f(1.0, 1.0, 1.0);
 		Graphics::DrawLine(width, height, obstacle.Point1, obstacle.Point2);
-	}
+	}*/
 }
 
 //float smoothing_kernel(float radius, float distance) {
@@ -456,10 +463,13 @@ void Environment::parallelCheckCollisions() {
 void Environment::update(float dt) {
 
 	//std::cout<<"A"<<std::endl;
+	std::cout << "a" << std::endl;
 
 	for (auto& pipe : m_Pipes) {
-		pipe.update(dt, m_Particles, InteractionMatrixClass::getInstance()->getParticlesInCell(pipe.getPosition(), particleRadiusOfRepel), particleRadius * 2);
+		pipe->update(dt, m_Particles, InteractionMatrixClass::getInstance()->getParticlesInCell(pipe->getPosition(), particleRadiusOfRepel), particleRadius * 2);
 	}
+
+	std::cout << "b" << std::endl;
 
 	//std::cout<<"B"<<std::endl;
 

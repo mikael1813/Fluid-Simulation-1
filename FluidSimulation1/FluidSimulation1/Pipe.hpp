@@ -6,12 +6,7 @@
 
 class Pipe {
 public:
-	void update(float dt, std::vector<Particle*>& particles, std::vector<Particle*> surroundingParticles, float particleSize);
-
-	Pipe(Vector2D position) : m_Position(position) {
-		m_InteractionRadius = 50.0f;
-		m_Pressure = 0.0f;
-	}
+	virtual void update(float dt, std::vector<Particle*>& particles, std::vector<Particle*> surroundingParticles, float particleSize) = 0;
 
 	Vector2D getPosition() {
 		return m_Position;
@@ -21,9 +16,35 @@ public:
 		return m_InteractionRadius;
 	}
 
-private:
+protected:
 	Vector2D m_Position;
 	float m_InteractionRadius;
 	float m_Pressure;
 	int m_ID = 10000;
+};
+
+class GeneratorPipe : public Pipe {
+
+public:
+
+	GeneratorPipe(Vector2D position) {
+		m_Position = position;
+		m_InteractionRadius = 50.0f;
+		m_Pressure = 0.0f;
+	}
+	void update(float dt, std::vector<Particle*>& particles, std::vector<Particle*> surroundingParticles, float particleSize);
+};
+
+
+class ConsumerPipe : public Pipe {
+
+public:
+
+	ConsumerPipe(Vector2D position) {
+		m_Position = position;
+		m_InteractionRadius = 50.0f;
+		m_Pressure = 0.0f;
+	}
+
+	void update(float dt, std::vector<Particle*>& particles, std::vector<Particle*> surroundingParticles, float particleSize);
 };
