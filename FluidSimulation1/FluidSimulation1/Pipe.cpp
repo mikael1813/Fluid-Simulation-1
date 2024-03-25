@@ -80,7 +80,7 @@ void ConsumerPipe::update(float dt, std::vector<Particle*>& particles, std::vect
 		}
 
 		float distance = direction.getMagnitude();
-		if (distance <= m_InteractionRadius) {
+		if (distance <= m_InteractionRadius + particleSize) {
 			particlesToRemove.push_back(particle);
 		}
 	}

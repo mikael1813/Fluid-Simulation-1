@@ -86,6 +86,8 @@ Environment::Environment() {
 	//m_Pipes.push_back(new GeneratorPipe(Vector2D(SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2)));
 	m_Pipes.push_back(new ConsumerPipe(Vector2D(3 * SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2)));
 
+	m_Obstacles.push_back(Surface2D(3 * SCREEN_WIDTH / 4+ 100, SCREEN_HEIGHT / 2 - 50, 3 * SCREEN_WIDTH / 4 + 100, SCREEN_HEIGHT / 2 + 50));
+
 	/*m_Obstacles.push_back(Surface2D(500, 400, 600, 300));
 	m_Obstacles.push_back(Surface2D(600, 300, 700, 400));
 	m_Obstacles.push_back(Surface2D(700, 400, 500, 400));*/
@@ -139,7 +141,7 @@ void Environment::render(int width, int height)
 
 	for (auto& pipe : m_Pipes) {
 		glColor4f(1.0, 1.0, 1.0, 0.5);
-		Graphics::DrawCircle(width, height, pipe->getPosition().X, pipe->getPosition().Y, pipe->getInteractionRadius(), 20);
+		Graphics::DrawCircle(width, height, pipe->getPosition().X, pipe->getPosition().Y, pipe->getInteractionRadius() * 2, 20);
 	}
 
 	this->renderParticles(width, height);
@@ -476,13 +478,9 @@ void Environment::update(float dt) {
 	//std::chrono::steady_clock::time_point time1 = std::chrono::steady_clock::now();
 	InteractionMatrixClass::getInstance()->updateInteractionMatrix(m_Particles, particleRadiusOfRepel);
 
-	std::cout << "a" << std::endl;
-
 	for (auto& pipe : m_Pipes) {
 		pipe->update(dt, m_Particles, InteractionMatrixClass::getInstance()->getParticlesInCell(pipe->getPosition(), particleRadiusOfRepel), particleRadius * 2);
 	}
-
-	std::cout << "b" << std::endl;
 
 	//std::cout<<"D"<<std::endl;
 
