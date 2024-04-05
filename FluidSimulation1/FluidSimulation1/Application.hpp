@@ -1,6 +1,6 @@
 #pragma once
 
-#include <SDL.h>
+//#include <SDL.h>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -21,7 +21,7 @@ public:
 
     void update(float dt);
 
-    void mousePress(SDL_MouseButtonEvent& b);
+    void mousePress();
 private:
 
     GLFWwindow* m_window;

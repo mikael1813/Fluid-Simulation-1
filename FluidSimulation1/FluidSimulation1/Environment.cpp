@@ -17,7 +17,7 @@
 #include <map>
 
 
-constexpr auto particleCount = 500;
+constexpr auto particleCount = 3000;
 
 constexpr auto particleRadius = 2;
 constexpr auto particleRadiusOfRepel = 50;
@@ -33,7 +33,7 @@ constexpr float viscosityStrength = 0.1f;
 
 constexpr float HOW_FAR_INTO_THE_FUTURE = 10.0f;
 
-constexpr int THREAD_COUNT = 8;
+constexpr int THREAD_COUNT = 4;
 
 float ExampleFunction(Vector2D point) {
 	return cos(point.Y - 3 + sin(point.X));
@@ -83,10 +83,10 @@ Environment::Environment() {
 	m_Obstacles.push_back(Surface2D(50, 699, 1200, 700));
 	m_Obstacles.push_back(Surface2D(1200, 10, 1200, 700));
 
-	//m_Pipes.push_back(new GeneratorPipe(Vector2D(SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2)));
-	m_Pipes.push_back(new ConsumerPipe(Vector2D(3 * SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2)));
+	/*m_Pipes.push_back(new GeneratorPipe(Vector2D(SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2), 5));
+	m_Pipes.push_back(new ConsumerPipe(Vector2D(3 * SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2), 10));*/
 
-	m_Obstacles.push_back(Surface2D(3 * SCREEN_WIDTH / 4+ 100, SCREEN_HEIGHT / 2 - 50, 3 * SCREEN_WIDTH / 4 + 100, SCREEN_HEIGHT / 2 + 50));
+	//m_Obstacles.push_back(Surface2D(3 * SCREEN_WIDTH / 4 + 100, SCREEN_HEIGHT / 2 - 50, 3 * SCREEN_WIDTH / 4 + 100, SCREEN_HEIGHT / 2 + 50));
 
 	/*m_Obstacles.push_back(Surface2D(500, 400, 600, 300));
 	m_Obstacles.push_back(Surface2D(600, 300, 700, 400));
@@ -475,37 +475,35 @@ void Environment::update(float dt) {
 
 	//std::cout<<"C"<<std::endl;
 
-	//std::chrono::steady_clock::time_point time1 = std::chrono::steady_clock::now();
+	std::chrono::steady_clock::time_point time1 = std::chrono::steady_clock::now();
 	InteractionMatrixClass::getInstance()->updateInteractionMatrix(m_Particles, particleRadiusOfRepel);
+
+	//std::cout<<"D"<<std::endl;
+
+	std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();
+	double tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
 
 	for (auto& pipe : m_Pipes) {
 		pipe->update(dt, m_Particles, InteractionMatrixClass::getInstance()->getParticlesInCell(pipe->getPosition(), particleRadiusOfRepel), particleRadius * 2);
 	}
 
-	//std::cout<<"D"<<std::endl;
+	time1 = std::chrono::steady_clock::now();
 
-	//std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();
-	//double tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
-
-	//time1 = std::chrono::steady_clock::now();
-
+	//this->updateParticleDensities(0, m_Particles.size());
 	this->parallelUpdateParticleDensities();
 
-	//std::cout<<"E"<<std::endl;
+	time2 = std::chrono::steady_clock::now();
+	tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
 
-	//time2 = std::chrono::steady_clock::now();
-	//tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
+	time1 = std::chrono::steady_clock::now();
 
-	/*time1 = std::chrono::steady_clock::now();
-
-	this->updateParticleDensities(0, m_Particles.size());
+	//this->calculateFutureVelocities(dt, 0, m_Particles.size());
+	this->parallelCalculateFutureVelocities(dt);
 
 	time2 = std::chrono::steady_clock::now();
-	tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();*/
+	tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
 
 	//time1 = std::chrono::steady_clock::now();
-
-	this->parallelCalculateFutureVelocities(dt);
 
 	//std::cout<<"F"<<std::endl;
 

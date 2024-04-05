@@ -3,7 +3,7 @@
 #include "Particle.hpp"
 #include "Pipe.hpp"
 
-#include "SDL.h"
+//#include "SDL.h"
 
 #include <vector>
 #include "thread"

@@ -1,5 +1,4 @@
 #include <iostream>
-#include <SDL.h>
 #include "Application.hpp"
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>

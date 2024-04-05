@@ -16,7 +16,8 @@ void GeneratorPipe::update(float dt, std::vector<Particle*>& particles, std::vec
 	std::random_device rd;
 	std::mt19937 gen(rd());
 
-	for (int i = 0; i < constants::m_PI * m_InteractionRadius * m_InteractionRadius / (particleSize * 5000); i++) {
+	//for (int i = 0; i < constants::m_PI * m_InteractionRadius * m_InteractionRadius / (particleSize * 5000); i++) {
+	while (particlesToAdd.size() < m_ParticlesPerCycle) {
 		int posX = std::uniform_int_distribution<int>(m_Position.X - m_InteractionRadius / 2, m_Position.X + m_InteractionRadius / 2)(gen);
 		int posY = std::uniform_int_distribution<int>(m_Position.Y - m_InteractionRadius / 2, m_Position.Y + m_InteractionRadius / 2)(gen);
 
@@ -82,6 +83,10 @@ void ConsumerPipe::update(float dt, std::vector<Particle*>& particles, std::vect
 		float distance = direction.getMagnitude();
 		if (distance <= m_InteractionRadius + particleSize) {
 			particlesToRemove.push_back(particle);
+		}
+
+		if (particlesToRemove.size() >= m_ParticlesPerCycle) {
+			break;
 		}
 	}
 

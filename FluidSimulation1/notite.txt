@@ -1,0 +1,33 @@
+particule: 3000
+
+threads: 1 -> FPS ~ 15
+threads: 2 -> FPS ~ 21
+threads: 4 -> FPS ~ 24
+threads: 8 -> FPS ~ 21
+threads: 16 -> FPS ~ 17
+
+si daca esti curios cum e iti arat un graf
+cu numarul de thread-uri care ruleaza
+de-a lungul unui frame
+
+nu asa         asa
+1		1
+|		|
+8  		8
+|		|
+1		1
+		|
+		8
+		|
+		1
+		|
+		8
+		|
+		1
+
+
+tick:
+	METHOD NAME							TIME
+	updateInteractionMatrix				7460
+	parallelUpdateParticleDensities  	9974
+	parallelCalculateFutureVelocities  	14591

@@ -85,22 +85,22 @@ void Application::loop()
 		frames++;
 
 		if (time_passed >= 1.0f) {
-			std::cout << "FPS: " << frames << " " << std::endl;
+			//std::cout << "FPS: " << frames << " " << std::endl;
 			time_passed = 0.0f;
 			frames = 0;
 		}
 	}
 }
 
-void Application::mousePress(SDL_MouseButtonEvent& b) {
-	if (b.button == SDL_BUTTON_LEFT) {
+void Application::mousePress() {
+	/*if (b.button == SDL_BUTTON_LEFT) {
 
 	}
 	if (b.button)
 		if (b.button == SDL_BUTTON_RIGHT) {
 			int x = b.x;
 			int y = b.y;
-		}
+		}*/
 }
 
 void Application::render()
