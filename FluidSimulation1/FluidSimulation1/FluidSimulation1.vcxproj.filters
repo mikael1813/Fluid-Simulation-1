@@ -63,4 +63,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="GpuParallel.cuh">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="GpuParallel.cu">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>

@@ -1,6 +1,7 @@
 #include "Environment.hpp"
 #include "InteractionMatrixClass.hpp"
 #include "Graphics.hpp"
+#include "GpuParallel.cuh"
 
 #include <algorithm>
 
@@ -490,7 +491,8 @@ void Environment::update(float dt) {
 	time1 = std::chrono::steady_clock::now();
 
 	//this->updateParticleDensities(0, m_Particles.size());
-	this->parallelUpdateParticleDensities();
+	//this->parallelUpdateParticleDensities();
+	GpuParallelUpdateParticleDensities(m_Particles, InteractionMatrixClass::getInstance(), particleRadiusOfRepel);
 
 	time2 = std::chrono::steady_clock::now();
 	tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();

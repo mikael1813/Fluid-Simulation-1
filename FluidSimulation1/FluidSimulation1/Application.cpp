@@ -61,24 +61,38 @@ void Application::loop()
 		//std::cout << deltaTime << std::endl;
 
 		//std::chrono::steady_clock::time_point time1 = std::chrono::steady_clock::now();
+		std::chrono::steady_clock::time_point time1 = std::chrono::steady_clock::now();
 
 		this->update(deltaTime);
+
+		std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();
+		double tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
 
 		//std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();
 		//double tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
 
 		//time1 = std::chrono::steady_clock::now();
 
+		time1 = std::chrono::steady_clock::now();
+
 		// Render here
 		this->render();
+
+		time2 = std::chrono::steady_clock::now();
+		tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
 
 		//time2 = std::chrono::steady_clock::now();
 		//tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
 
+		time1 = std::chrono::steady_clock::now();
+
 		this->events();
 
+		time2 = std::chrono::steady_clock::now();
+		tick = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
+
 		std::chrono::steady_clock::time_point time = std::chrono::steady_clock::now();
-		double tick = std::chrono::duration_cast<std::chrono::microseconds>(time - lastTime).count() / 1000000.0f;
+		tick = std::chrono::duration_cast<std::chrono::microseconds>(time - lastTime).count() / 1000000.0f;
 		lastTime = time;
 
 		time_passed += tick;

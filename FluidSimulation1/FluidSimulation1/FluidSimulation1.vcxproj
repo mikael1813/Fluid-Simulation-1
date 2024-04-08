@@ -53,8 +53,7 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  <ImportGroup Label="ExtensionSettings">
-  </ImportGroup>
+  <ImportGroup Label="ExtensionSettings" />
   <ImportGroup Label="Shared">
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -71,7 +70,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>D:\Disertatie\SDL2-2.28.5\include;C:\Users\IAM6CLJ\Downloads\SDL2-2.28.5\SDL2-2.30.0\include;$(IncludePath)</IncludePath>
+    <IncludePath>D:\Disertatie\SDL2-2.28.5\include;C:\Users\IAM6CLJ\Downloads\SDL2-2.28.5\SDL2-2.30.0\include;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.4\include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Users\IAM6CLJ\Downloads\SDL2-2.28.5\SDL2-2.30.0\lib\x64;D:\Disertatie\SDL2-2.28.5\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -151,6 +150,10 @@
     <ClInclude Include="Phisics.hpp" />
     <ClInclude Include="Pipe.hpp" />
     <ClInclude Include="Timer.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="GpuParallel.cu" />
+    <None Include="GpuParallel.cuh" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
