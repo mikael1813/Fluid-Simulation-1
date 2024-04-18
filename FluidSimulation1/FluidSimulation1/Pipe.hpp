@@ -30,7 +30,7 @@ public:
 
 	GeneratorPipe(Vector2D position, int particlePerCycle) {
 		m_Position = position;
-		m_InteractionRadius = 50.0f;
+		m_InteractionRadius = 10.0f;
 		m_Pressure = 0.0f;
 		m_ParticlesPerCycle = particlePerCycle;
 	}
